@@ -1,0 +1,10 @@
+{
+  "name": "CubeVerse",
+  "short_name": "CubeVerse",
+  "description": "Learn. Practice. Connect. The home of speedcubing.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#060A18",
+  "theme_color": "#060A18",
+  "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}
