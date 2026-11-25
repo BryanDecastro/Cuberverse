@@ -4,7 +4,7 @@ export const timerEn = {
   title: 'Train with the',
   titleAccent: 'CubeVerse Timer',
   subtitle: 'A precise speedcubing timer. Practice, track your progress and get faster.',
-  modes: { simple: 'Simple mode', advanced: 'Advanced mode' },
+  modes: { simple: 'Simple mode', advanced: 'Advanced mode', simpleShort: 'Simple', advancedShort: 'Advanced' },
   puzzle: 'Puzzle',
   scramble: {
     title: 'Scramble',
@@ -17,6 +17,9 @@ export const timerEn = {
   },
   hint: {
     idle: 'Hold Space, release to start. On a phone, touch and hold the timer.',
+    idleTouch: 'Touch and hold the timer until it turns green, then let go to start.',
+    idleInspectTouch: 'Tap the timer to start the 15 s inspection.',
+    inspectingTouch: 'Inspecting. Touch and hold, let go to start.',
     holding: 'Keep holding…',
     ready: 'Release to start',
     running: 'Any key or tap stops the timer',

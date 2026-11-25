@@ -7,7 +7,7 @@ export const timerPt: Widen<typeof timerEn> = {
   title: 'Treine com o',
   titleAccent: 'Timer CubeVerse',
   subtitle: 'Um timer de speedcubing preciso. Pratique, acompanhe sua evolução e fique mais rápido.',
-  modes: { simple: 'Modo simples', advanced: 'Modo avançado' },
+  modes: { simple: 'Modo simples', advanced: 'Modo avançado', simpleShort: 'Simples', advancedShort: 'Avançado' },
   puzzle: 'Quebra-cabeça',
   scramble: {
     title: 'Scramble',
@@ -20,6 +20,9 @@ export const timerPt: Widen<typeof timerEn> = {
   },
   hint: {
     idle: 'Segure Espaço e solte para começar. No celular, toque e segure o timer.',
+    idleTouch: 'Toque e segure o timer até ficar verde, depois solte para começar.',
+    idleInspectTouch: 'Toque no timer para começar a inspeção de 15 s.',
+    inspectingTouch: 'Inspecionando. Toque e segure, solte para começar.',
     holding: 'Continue segurando…',
     ready: 'Solte para começar',
     running: 'Qualquer tecla ou toque para o timer',

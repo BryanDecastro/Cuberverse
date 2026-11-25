@@ -51,7 +51,7 @@ export function TimeChart({ solves }: { solves: Solve[] }) {
   const finite = [...singles, ...ao5].filter((v): v is number => v !== null && v !== DNF)
   if (shown.length < 2 || finite.length < 2) {
     return (
-      <div ref={wrap} className="flex h-[220px] items-center justify-center rounded-2xl border border-dashed border-line text-center text-sm text-ink-3">
+      <div ref={wrap} className="flex h-[120px] items-center justify-center sm:h-[220px] rounded-2xl border border-dashed border-line text-center text-sm text-ink-3">
         {c.empty}
       </div>
     )

@@ -3,6 +3,7 @@ import { BarChart3, Check, Clock, Copy, Crown, Layers, Layers3, Plus, RefreshCw,
 import { ACHIEVEMENT_IDS, type AchievementStatus } from '@/features/achievements/achievements'
 import { useI18n } from '@/i18n/I18nProvider'
 import { cx, fmt } from '@/lib/format'
+import { useMediaQuery } from '@/lib/useMediaQuery'
 import type { InspectionStage, Phase } from './engine'
 import { averageOf, best, bestAverage, DNF, effective, formatSolve, formatTime, mean } from './stats'
 import type { Penalty, Session, Solve } from './types'
@@ -26,23 +27,24 @@ export function ScrambleBar({ scramble, official, eventLabel, onNew, disabled }:
   }
   return (
     <div>
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3">
         <p className="flex items-center gap-2 text-sm font-semibold text-ink">
           <Shuffle size={17} className="text-[#8fb8ff]" aria-hidden="true" />
           {s.title} <span className="font-normal text-ink-3">({eventLabel})</span>
         </p>
         <div className="ml-auto flex gap-2">
-          <button type="button" onClick={copy} disabled={!scramble || disabled} className="btn inline-flex h-10 items-center gap-2 rounded-xl border border-line bg-canvas/60 px-3 text-sm text-ink-2 hover:text-ink disabled:opacity-40">
-            {copied ? <Check size={15} aria-hidden="true" /> : <Copy size={15} aria-hidden="true" />} {copied ? s.copied : s.copy}
+          {/* Icon-only on phones (the label stays for screen readers and as a tooltip). */}
+          <button type="button" onClick={copy} disabled={!scramble || disabled} title={copied ? s.copied : s.copy} className="btn inline-flex h-10 min-w-10 items-center justify-center gap-2 rounded-xl border border-line bg-canvas/60 px-2.5 text-sm text-ink-2 hover:text-ink disabled:opacity-40 sm:px-3">
+            {copied ? <Check size={15} aria-hidden="true" /> : <Copy size={15} aria-hidden="true" />} <span className="sr-only sm:not-sr-only">{copied ? s.copied : s.copy}</span>
           </button>
-          <button type="button" onClick={onNew} disabled={disabled} className="btn inline-flex h-10 items-center gap-2 rounded-xl border border-line bg-canvas/60 px-3 text-sm text-ink-2 hover:text-ink disabled:opacity-40">
-            <RefreshCw size={15} aria-hidden="true" /> {s.newScramble}
+          <button type="button" onClick={onNew} disabled={disabled} title={s.newScramble} className="btn inline-flex h-10 min-w-10 items-center justify-center gap-2 rounded-xl border border-line bg-canvas/60 px-2.5 text-sm text-ink-2 hover:text-ink disabled:opacity-40 sm:px-3">
+            <RefreshCw size={15} aria-hidden="true" /> <span className="sr-only sm:not-sr-only">{s.newScramble}</span>
           </button>
         </div>
       </div>
       <p
         className={cx(
-          'mt-3 min-h-[3.2rem] rounded-2xl border border-line bg-canvas/60 px-4 py-3 text-center font-mono text-[clamp(1rem,2.2vw,1.5rem)] leading-relaxed tracking-wide text-ink',
+          'mt-3 min-h-[3.2rem] rounded-2xl border border-line bg-canvas/60 px-3 py-2.5 text-center font-mono text-[clamp(0.95rem,2.2vw,1.5rem)] leading-relaxed tracking-wide text-ink sm:px-4 sm:py-3',
           !scramble && 'animate-pulse text-ink-3',
         )}
         aria-live="polite"
@@ -76,6 +78,8 @@ const STAGE_COLOR: Record<InspectionStage, string> = {
   dnf: 'text-[#ff3b50]',
 }
 
+const TOUCH = '(pointer: coarse)'
+
 export function TimerDisplay({
   phase,
   text,
@@ -93,8 +97,9 @@ export function TimerDisplay({
 }) {
   const { t } = useI18n()
   const h = t.timer.hint
+  const touch = useMediaQuery(TOUCH)
   const stageHint =
-    inspection === '8' ? h.eight : inspection === '12' ? h.twelve : inspection === '+2' ? h.plus2 : inspection === 'dnf' ? h.dnf : h.inspecting
+    inspection === '8' ? h.eight : inspection === '12' ? h.twelve : inspection === '+2' ? h.plus2 : inspection === 'dnf' ? h.dnf : touch ? h.inspectingTouch : h.inspecting
   const hint =
     phase === 'holding'
       ? h.holding
@@ -105,8 +110,12 @@ export function TimerDisplay({
           : phase === 'inspecting'
             ? stageHint
             : inspectionOn
-              ? h.idleInspect
-              : h.idle
+              ? touch
+                ? h.idleInspectTouch
+                : h.idleInspect
+              : touch
+                ? h.idleTouch
+                : h.idle
   return (
     <div className="flex flex-col items-center">
       <div className="relative">
@@ -126,8 +135,8 @@ export function TimerDisplay({
         {text}
       </p>
       </div>
-      <p className="mt-9 inline-flex items-center gap-3 rounded-2xl border border-line bg-canvas/60 px-3 py-2 text-sm text-ink-2" aria-live="polite">
-        <kbd className="rounded-lg border border-line-strong/80 px-2.5 py-0.5 font-display text-sm font-semibold text-ink">{t.timer.space}</kbd>
+      <p className="mt-6 inline-flex items-center gap-3 rounded-2xl border border-line bg-canvas/60 px-3 py-2 text-center text-[0.8rem] text-ink-2 sm:mt-9 sm:text-left sm:text-sm" aria-live="polite">
+        {!touch && <kbd className="rounded-lg border border-line-strong/80 px-2.5 py-0.5 font-display text-sm font-semibold text-ink">{t.timer.space}</kbd>}
         {hint}
       </p>
     </div>
@@ -182,13 +191,13 @@ export function StatTiles({ solves }: { solves: Solve[] }) {
     { label: s.total, value: String(solves.length), icon: BarChart3, tone: 'text-[#4fe08f]' },
   ]
   return (
-    <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+    <dl className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
       {tiles.map(({ label, value, icon: Icon, tone }) => (
-        <div key={label} className="glass flex items-center gap-3 rounded-2xl px-4 py-3.5">
-          <Icon size={26} strokeWidth={1.6} className={cx('shrink-0', tone)} aria-hidden="true" />
+        <div key={label} className="glass flex items-center gap-2.5 rounded-2xl px-3 py-2.5 sm:gap-3 sm:px-4 sm:py-3.5">
+          <Icon strokeWidth={1.6} className={cx('h-5 w-5 shrink-0 sm:h-[26px] sm:w-[26px]', tone)} aria-hidden="true" />
           <div className="min-w-0">
-            <dt className="text-xs text-ink-3">{label}</dt>
-            <dd className="font-display text-2xl font-semibold tabular-nums text-ink" data-stat={label}>
+            <dt className="truncate text-[0.7rem] text-ink-3 sm:text-xs">{label}</dt>
+            <dd className="font-display text-xl font-semibold tabular-nums text-ink sm:text-2xl" data-stat={label}>
               {value}
             </dd>
           </div>

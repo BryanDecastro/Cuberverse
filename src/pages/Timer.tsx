@@ -146,7 +146,7 @@ function TimerView() {
       ref={padRef}
       onContextMenu={(e) => e.preventDefault()}
       className={cx(
-        'glass relative select-none overflow-hidden rounded-3xl p-5 sm:p-7 [touch-action:manipulation]',
+        'glass relative select-none overflow-hidden rounded-3xl p-4 sm:p-7 [touch-action:manipulation]',
         timer.phase === 'ready' && 'ring-2 ring-[#4fe08f]/60',
         timer.phase === 'holding' && 'ring-2 ring-[#ff6b7d]/50',
         timer.phase === 'inspecting' && 'ring-2 ring-[#7fb0ff]/40',
@@ -253,25 +253,28 @@ function TimerView() {
   }
 
   /* ---------------- Regular timer ---------------- */
-  const seg = (on: boolean) => cx('inline-flex h-10 items-center gap-2 rounded-xl px-4 text-sm font-semibold transition-colors', on ? 'bg-accent/25 text-white shadow-[inset_0_0_0_1px_rgb(75_141_255/0.45)]' : 'text-ink-3 hover:text-ink')
+  const seg = (on: boolean) => cx('inline-flex h-9 items-center gap-1.5 rounded-xl px-3 text-[0.8rem] font-semibold transition-colors sm:h-10 sm:gap-2 sm:px-4 sm:text-sm', on ? 'bg-accent/25 text-white shadow-[inset_0_0_0_1px_rgb(75_141_255/0.45)]' : 'text-ink-3 hover:text-ink')
 
   return (
     <div className="mx-auto max-w-[1440px] px-4 pb-12 pt-24 sm:px-6 lg:px-8">
-      <header className={cx('mb-5', dim)}>
-        <Kicker>{tm.kicker}</Kicker>
-        <h1 className="mt-3 font-display text-[clamp(1.9rem,4vw,3.1rem)] font-semibold leading-[1.05] tracking-tight">
+      {/* On phones the header stays short so the clock is on the first screen. */}
+      <header className={cx('mb-3 sm:mb-5', dim)}>
+        <Kicker className="hidden sm:block">{tm.kicker}</Kicker>
+        <h1 className="font-display text-[clamp(1.4rem,4vw,3.1rem)] font-semibold leading-[1.05] tracking-tight sm:mt-3">
           {tm.title} <span className="text-gradient">{tm.titleAccent}</span>
         </h1>
-        <p className="mt-2 max-w-[60ch] text-ink-2">{tm.subtitle}</p>
+        <p className="mt-2 hidden max-w-[60ch] text-ink-2 sm:block">{tm.subtitle}</p>
       </header>
 
-      <div className={cx('mb-5 flex flex-wrap items-center gap-3', dim)}>
+      <div className={cx('mb-3 flex flex-wrap items-center gap-2 sm:mb-5 sm:gap-3', dim)}>
         <div role="radiogroup" aria-label={`${tm.modes.simple} / ${tm.modes.advanced}`} className="inline-flex rounded-2xl border border-line bg-panel/60 p-1">
           <button type="button" role="radio" aria-checked={mode === 'simple'} onClick={() => setMode('simple')} className={seg(mode === 'simple')}>
-            <Zap size={15} aria-hidden="true" /> {tm.modes.simple}
+            <Zap size={15} aria-hidden="true" /> <span className="sm:hidden">{tm.modes.simpleShort}</span>
+            <span className="hidden sm:inline">{tm.modes.simple}</span>
           </button>
           <button type="button" role="radio" aria-checked={mode === 'advanced'} onClick={() => setMode('advanced')} className={seg(mode === 'advanced')}>
-            <Gauge size={15} aria-hidden="true" /> {tm.modes.advanced}
+            <Gauge size={15} aria-hidden="true" /> <span className="sm:hidden">{tm.modes.advancedShort}</span>
+            <span className="hidden sm:inline">{tm.modes.advanced}</span>
           </button>
         </div>
         <div role="radiogroup" aria-label={tm.puzzle} className="inline-flex rounded-2xl border border-line bg-panel/60 p-1">
@@ -289,7 +292,7 @@ function TimerView() {
           title={tm.inspection.help}
           onClick={() => setInspection(!inspectionOn)}
           className={cx(
-            'btn inline-flex h-12 items-center gap-2.5 rounded-2xl border px-4 text-sm font-semibold transition-colors',
+            'btn inline-flex h-11 items-center gap-2 rounded-2xl border px-3 text-[0.8rem] font-semibold transition-colors sm:h-12 sm:gap-2.5 sm:px-4 sm:text-sm',
             inspectionOn ? 'border-accent/60 bg-accent/15 text-white' : 'border-line bg-panel/60 text-ink-3 hover:text-ink',
           )}
           data-inspection-toggle=""
@@ -301,7 +304,7 @@ function TimerView() {
           </span>
         </button>
         <span id="inspection-help" className="sr-only">{tm.inspection.help}</span>
-        <p className="text-xs text-ink-3 sm:ml-auto">{tm.storageNote}</p>
+        <p className="text-[0.7rem] text-ink-3 sm:ml-auto sm:text-xs">{tm.storageNote}</p>
       </div>
 
       {mode === 'simple' ? (

@@ -69,7 +69,7 @@ export function ScrambleVisualizer({ scramble, event, paused }: { scramble: stri
     cx('inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-sm font-semibold transition-colors', on ? 'bg-accent/25 text-white' : 'text-ink-3 hover:text-ink')
 
   return (
-    <section aria-labelledby="viz-title" className="glass flex h-full flex-col rounded-3xl p-5">
+    <section aria-labelledby="viz-title" className="glass flex h-full flex-col rounded-3xl p-4 sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 id="viz-title" className="flex items-center gap-2 font-display text-lg font-semibold">
           <Box size={18} className="text-[#8fb8ff]" aria-hidden="true" /> {v.title}
@@ -92,7 +92,7 @@ export function ScrambleVisualizer({ scramble, event, paused }: { scramble: stri
       {!supported ? (
         <p className="mt-6 text-sm leading-relaxed text-ink-3">{v.only333}</p>
       ) : (
-        <div className={cx('mt-4 grid flex-1 items-center gap-4', view === 'both' && 'sm:grid-cols-[1.1fr_1fr]')}>
+        <div className={cx('mt-4 grid flex-1 items-center gap-3 sm:gap-4', view === 'both' && 'grid-cols-[1.1fr_1fr]')}>
           <div className={cx(view === '2d' && 'hidden')}>
             <LazyCube
               apiRef={api}
@@ -101,7 +101,7 @@ export function ScrambleVisualizer({ scramble, event, paused }: { scramble: stri
               idleSpin={false}
               paused={paused}
               onReady={() => setReady(true)}
-              className="h-[240px] w-full sm:h-[280px]"
+              className={cx('w-full sm:h-[280px]', view === 'both' ? 'h-[170px]' : 'h-[240px]')}
             />
           </div>
           <div className={cx('mx-auto w-full max-w-[300px]', view === '3d' && 'hidden')}>
