@@ -1,5 +1,8 @@
 import type { Dictionary } from './en'
 import { learnPt } from './learn.pt'
+import { timerPt } from './timer.pt'
+import { historyPt } from './history.pt'
+import { wcaPt } from './wca.pt'
 
 /** Português (Brasil). Must mirror the shape of en.ts. */
 export const pt: Dictionary = {
@@ -13,7 +16,6 @@ export const pt: Dictionary = {
     timer: 'Timer',
     history: 'História',
     wca: 'WCA e Lendas',
-    community: 'Comunidade',
     signIn: 'Entrar',
     profile: 'Meu Perfil',
     signOut: 'Sair',
@@ -97,11 +99,6 @@ export const pt: Dictionary = {
   coming: {
     kicker: 'No roadmap',
     title: 'Feito para crescer com você.',
-    community: {
-      title: 'Comunidade',
-      text: 'Canais por idioma, scrambles compartilhados e salas de treino com cubers do mundo todo.',
-      tag: 'Em breve',
-    },
     pro: {
       title: 'CubeVerse Pro',
       text: 'Bibliotecas avançadas de algoritmos, planos de treino personalizados e estatísticas mais profundas.',
@@ -128,7 +125,6 @@ export const pt: Dictionary = {
       profile: 'Meu Perfil',
       history: 'História',
       wca: 'WCA e Lendas',
-      community: 'Comunidade',
       signIn: 'Entrar',
     },
     prototype: 'Versão protótipo. Login e perfil usam dados de demonstração salvos apenas neste navegador.',
@@ -169,7 +165,35 @@ export const pt: Dictionary = {
     forgotTitle: 'Redefinir sua senha',
     forgotSub: 'Digite seu e-mail e enviaremos um link para redefinir.',
     forgotSubmit: 'Enviar link',
-    forgotSent: 'Modo demonstração: na versão completa, um link seria enviado para {email}.',
+    forgotSent: 'Se existir uma conta com {email}, um link para redefinir a senha está a caminho. Confira a caixa de entrada e o spam.',
+    forgotSentDemo: 'Modo demonstração: na versão completa, um link seria enviado para {email}.',
+    confirmTitle: 'Confira seu e-mail',
+    confirmSent: 'Enviamos um link de confirmação para {email}. Abra o link para ativar sua conta. Ele já faz o seu login.',
+    resend: 'Reenviar e-mail',
+    resent: 'Enviado de novo. Confira a caixa de entrada e o spam.',
+    resetTitle: 'Escolha uma nova senha',
+    resetSub: 'Digite uma nova senha para a sua conta.',
+    newPassword: 'Nova senha',
+    resetSubmit: 'Salvar nova senha',
+    resetDone: 'Sua senha foi alterada e você já está conectado.',
+    resetInvalid: 'Este link de redefinição é inválido ou expirou. Peça um novo.',
+    requestNew: 'Enviar um novo link',
+    callbackTitle: 'Confirmando seu e-mail',
+    callbackWorking: 'Um momento enquanto confirmamos seu e-mail…',
+    callbackDone: 'E-mail confirmado. Sua conta está ativa e você já está conectado.',
+    callbackError: 'Este link de confirmação é inválido ou expirou. Entre na sua conta e ajudamos você a receber um novo.',
+    goProfile: 'Ir para o meu perfil',
+    errors: {
+      invalid_credentials: 'E-mail ou senha incorretos.',
+      email_not_confirmed: 'Confirme seu e-mail primeiro. Abra o link que enviamos no cadastro.',
+      rate_limited: 'Muitas tentativas ou e-mails agora. Espere alguns minutos e tente de novo.',
+      email_not_sendable: 'Não conseguimos enviar um e-mail para este endereço agora. Tente mais tarde.',
+      weak_password: 'Escolha uma senha mais forte.',
+      same_password: 'A nova senha precisa ser diferente da antiga.',
+      no_session: 'Este link não é mais válido. Peça um novo.',
+      network: 'Sem conexão com o servidor. Verifique sua internet e tente de novo.',
+      unknown: 'Algo deu errado. Tente de novo.',
+    },
     backToSignIn: 'Voltar para o login',
     toSignUp: 'Novo no CubeVerse?',
     toSignUpLink: 'Criar uma conta',
@@ -185,8 +209,12 @@ export const pt: Dictionary = {
     back: 'Voltar ao início',
     other: 'Ou dê uma olhada em',
     demoProfile: 'Você entrou com uma conta de demonstração. Seu perfil real, estatísticas e conquistas chegam em uma próxima etapa.',
+    realProfile: 'Conectado como {email}. Seu perfil, estatísticas e conquistas chegam em uma próxima etapa.',
   },
   learn: learnPt,
+  timer: timerPt,
+  history: historyPt,
+  wca: wcaPt,
   notFound: {
     title: 'Essa face não existe no cubo.',
     text: 'A página que você procura não existe.',

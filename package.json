@@ -4,6 +4,9 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "vendor:cubing": "node scripts/copy-cubing.mjs",
+    "predev": "node scripts/copy-cubing.mjs",
+    "prebuild": "node scripts/copy-cubing.mjs",
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
@@ -12,6 +15,9 @@
   },
   "dependencies": {
     "@react-three/fiber": "^9.8.2",
+    "@supabase/supabase-js": "2.119.0",
+    "cubing": "0.66.1",
+    "gsap": "3.13.0",
     "lucide-react": "^1.76.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",

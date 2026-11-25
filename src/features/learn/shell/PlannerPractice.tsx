@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Keyboard, Lightbulb, Play, RotateCcw, Shuffle, Undo2 } from 'lucide-react'
+import { Hand, Lightbulb, Play, RotateCcw, Shuffle, Undo2 } from 'lucide-react'
 import { fromColorMap, type CubeState } from '@/features/cube/model'
-import { faceOf, invertMove, type Move } from '@/features/cube/moves'
+import { faceOf, invertMove, mergeMoves, type Move } from '@/features/cube/moves'
 import { useI18n } from '@/i18n/I18nProvider'
 import { cx, fmt } from '@/lib/format'
 import { Feedback } from '../components/Feedback'
-import { MovePad } from '../components/MovePad'
 import { ViewControls } from '../components/ViewControls'
 import { displayMove, moveDir } from '../notationText'
 import { ControlsSlot, PanelSlot, useCubeEvents, useLessonCube } from './LessonCubeContext'
@@ -105,7 +104,8 @@ export function PlannerPractice<S extends Step>({
 
   const doMoves = (list: Move[]) => {
     cube.api.current?.play(list)
-    setMoves((m) => [...m, ...list])
+    // The same turn twice in a row is written as one half turn (U U -> U2).
+    setMoves((m) => mergeMoves(m, list))
     setHint(null)
     setNoHint(false)
   }
@@ -155,7 +155,9 @@ export function PlannerPractice<S extends Step>({
             </span>
           ))}
         </div>
-        <MovePad onMove={(m) => doMoves([m])} active={animating} />
+        <p className="flex items-center justify-center gap-2 rounded-xl border border-accent/30 bg-accent/[0.08] px-3 py-2.5 text-center text-sm text-ink-2" data-gesture-hint="">
+          <Hand size={16} className="shrink-0 text-[#7fb0ff]" aria-hidden="true" /> {t.learn.gestureHint}
+        </p>
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap gap-2">
             <button type="button" onClick={showHint} disabled={done || !!animating} className={toolBtn}>
@@ -176,9 +178,6 @@ export function PlannerPractice<S extends Step>({
           </div>
           <ViewControls api={cube.api} compact />
         </div>
-        <p className="mt-3 hidden items-center gap-2 text-xs text-ink-3 sm:flex">
-          <Keyboard size={14} aria-hidden="true" /> {p3.keyboard}
-        </p>
       </ControlsSlot>
 
       <PanelSlot>

@@ -8,7 +8,8 @@ import { cx, fmt } from '@/lib/format'
 import { useLearnProgress } from '../LearnProgressProvider'
 import type { LessonId } from '../lessons'
 import { CompletionCard, type CompletionCopy } from '../components/CompletionCard'
-import { displayMove } from '../notationText'
+import { describeMove, displayMove } from '../notationText'
+import { isFace } from '@/features/cube/moves'
 import { LessonCubeContext, type CubeEvents, type LessonCube } from './LessonCubeContext'
 
 export type LessonShellProps = {
@@ -38,7 +39,19 @@ export function LessonShell({ lessonId, parts, renderPart, complete, nextTo, lab
   const [labels, setLabels] = useState(() => labelsFor(0))
   const [focus, setFocusState] = useState<((colors: Face[]) => boolean) | null>(null)
   const [ready, setReady] = useState(false)
-  const [turning, setTurning] = useState<Move | null>(null)
+  // The last move stays on screen a moment after it ends, so it can be read.
+  const [shownMove, setShownMove] = useState<{ move: Move; n: number } | null>(null)
+  const hideTimer = useRef<number | undefined>(undefined)
+  const moveCount = useRef(0)
+  // Drag-to-turn is on only while a part takes moves from the learner.
+  const gestureHandler = useRef<((m: Move) => void) | null>(null)
+  const [gesturesOn, setGesturesOn] = useState(false)
+  const setGesture = useCallback((handler: ((m: Move) => void) | null, owner?: (m: Move) => void) => {
+    if (handler) gestureHandler.current = handler
+    else if (!owner || gestureHandler.current === owner) gestureHandler.current = null
+    setGesturesOn(!!gestureHandler.current)
+  }, [])
+  const onGesture = useCallback((m: Move) => gestureHandler.current?.(m), [])
   const [showComplete, setShowComplete] = useState(false)
   const [controlsEl, setControlsEl] = useState<HTMLElement | null>(null)
   const [panelEl, setPanelEl] = useState<HTMLElement | null>(null)
@@ -60,11 +73,13 @@ export function LessonShell({ lessonId, parts, renderPart, complete, nextTo, lab
     api.current?.setSpeed(1)
     setHighlight(null)
     setArrow(null)
-    setTurning(null)
+    setShownMove(null)
     setFocus(null)
     setLabels(labelsFor(i))
     setPart(i)
   }
+
+  useEffect(() => () => window.clearTimeout(hideTimer.current), [])
 
   useEffect(() => {
     reachPart(lessonId, part)
@@ -90,20 +105,27 @@ export function LessonShell({ lessonId, parts, renderPart, complete, nextTo, lab
       setLabels,
       labels,
       setFocus,
+      setGesture,
       ready,
       listeners,
       slots: { controls: controlsEl, panel: panelEl },
     }),
-    [labels, setFocus, ready, controlsEl, panelEl],
+    [labels, setFocus, setGesture, ready, controlsEl, panelEl],
   )
 
   const onMoveStart = useCallback((m: Move) => {
-    setTurning(m)
+    window.clearTimeout(hideTimer.current)
+    moveCount.current += 1
+    // The same quarter turn again while its letter is still showing reads as a half turn (U, U -> U2).
+    setShownMove((prev) => ({
+      move: prev && prev.move === m && !m.endsWith('2') ? (`${m[0]}2` as Move) : m,
+      n: moveCount.current,
+    }))
     listeners.current.forEach((l) => l.onMoveStart?.(m))
   }, [])
   const onMoveEnd = useCallback((m: Move) => listeners.current.forEach((l) => l.onMoveEnd?.(m)), [])
   const onIdle = useCallback(() => {
-    setTurning(null)
+    hideTimer.current = window.setTimeout(() => setShownMove(null), 2200)
     listeners.current.forEach((l) => l.onIdle?.())
   }, [])
   const onReady = useCallback(() => setReady(true), [])
@@ -184,20 +206,41 @@ export function LessonShell({ lessonId, parts, renderPart, complete, nextTo, lab
             onMoveEnd={onMoveEnd}
             onIdle={onIdle}
             onReady={onReady}
+            onGesture={gesturesOn ? onGesture : null}
             className="h-[290px] w-full sm:h-[340px] xl:h-[min(360px,40vh)]"
           />
-          <p className="pointer-events-none absolute left-1 top-1 inline-flex items-center gap-1.5 rounded-full border border-line bg-canvas/70 px-2.5 py-1 text-[0.7rem] text-ink-3 backdrop-blur">
-            <Hand size={12} aria-hidden="true" /> {t.learn.camera.drag}
-          </p>
+          {/* Steps aside while a move is shown, so the two never overlap. */}
           <p
-            aria-live="polite"
             className={cx(
-              'pointer-events-none absolute right-1 top-1 rounded-xl border border-accent/50 bg-canvas/80 px-3 py-1 font-mono text-2xl text-white backdrop-blur transition-opacity duration-200',
-              turning ? 'opacity-100' : 'opacity-0',
+              'pointer-events-none absolute left-1 top-1 inline-flex max-w-[calc(100%-6rem)] items-center gap-1.5 rounded-full border border-line bg-canvas/70 px-2.5 py-1 text-[0.7rem] text-ink-3 backdrop-blur transition-opacity duration-300',
+              shownMove && 'opacity-0',
             )}
           >
-            {turning ? displayMove(turning) : ''}
+            <Hand size={12} aria-hidden="true" /> {gesturesOn ? t.learn.camera.dragTurn : t.learn.camera.drag}
           </p>
+          {/* The move just made, big enough to read: its letter and what it means. */}
+          <div
+            aria-live="polite"
+            data-move-badge={shownMove ? displayMove(shownMove.move) : undefined}
+            className={cx(
+              'pointer-events-none absolute right-1 top-1 flex max-w-[60%] items-center gap-3 rounded-2xl border border-accent/50 bg-canvas/85 py-1.5 pl-2 pr-3.5 shadow-[0_8px_30px_-10px_rgb(47_123_255/0.7)] backdrop-blur transition-opacity duration-300',
+              shownMove ? 'opacity-100' : 'opacity-0',
+            )}
+          >
+            {shownMove && (
+              <>
+                <span
+                  key={shownMove.n}
+                  className="move-pop grid h-12 min-w-12 place-items-center rounded-xl bg-accent/25 px-2 font-mono text-[1.9rem] font-bold leading-none text-white"
+                >
+                  {displayMove(shownMove.move)}
+                </span>
+                {isFace(shownMove.move[0]) && (
+                  <span className="hidden text-xs leading-snug text-ink-2 sm:block">{describeMove(t, shownMove.move)}</span>
+                )}
+              </>
+            )}
+          </div>
         </div>
 
         <div ref={setControlsEl} className="mt-2" />

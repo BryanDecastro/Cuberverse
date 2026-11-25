@@ -130,6 +130,21 @@ body {
   -webkit-backdrop-filter: blur(14px);
 }
 
+/* ---------- History timeline nodes (lit by ScrollTrigger) ---------- */
+.timeline-node[data-lit] {
+  border-color: #5aa8ff;
+  box-shadow: 0 0 0 4px rgb(47 123 255 / 0.18), 0 0 18px rgb(47 123 255 / 0.6);
+}
+.timeline-node[data-lit] > span { background: #5aa8ff; }
+
+/* ---------- The move badge on lesson cubes ---------- */
+@keyframes move-pop {
+  from { transform: scale(0.6); opacity: 0.2; }
+  60% { transform: scale(1.12); opacity: 1; }
+  to { transform: scale(1); }
+}
+.move-pop { animation: move-pop 0.32s var(--ease-out-soft) both; }
+
 /* ---------- Reveal entrances ---------- */
 .reveal {
   opacity: 0;

@@ -1,4 +1,4 @@
-import { BookOpen, GraduationCap, House, Timer, Trophy, Users, type LucideIcon } from 'lucide-react'
+import { BookOpen, GraduationCap, House, Timer, Trophy, type LucideIcon } from 'lucide-react'
 import { routes } from '@/config/routes'
 import type { Dictionary } from '@/i18n/en'
 
@@ -10,5 +10,4 @@ export const navItems: NavItem[] = [
   { to: routes.timer, label: (t) => t.nav.timer, icon: Timer },
   { to: routes.history, label: (t) => t.nav.history, icon: BookOpen },
   { to: routes.wca, label: (t) => t.nav.wca, icon: Trophy },
-  { to: routes.community, label: (t) => t.nav.community, icon: Users },
 ]

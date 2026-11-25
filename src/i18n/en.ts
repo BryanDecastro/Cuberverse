@@ -3,6 +3,9 @@
  * Every other locale must match this shape (enforced by the Dictionary type).
  */
 import { learnEn } from './learn.en'
+import { timerEn } from './timer.en'
+import { historyEn } from './history.en'
+import { wcaEn } from './wca.en'
 
 export const en = {
   meta: {
@@ -15,7 +18,6 @@ export const en = {
     timer: 'Timer',
     history: 'History',
     wca: 'WCA & Legends',
-    community: 'Community',
     signIn: 'Sign In',
     profile: 'My Profile',
     signOut: 'Sign out',
@@ -99,11 +101,6 @@ export const en = {
   coming: {
     kicker: 'On the roadmap',
     title: 'Built to grow with you.',
-    community: {
-      title: 'Community',
-      text: 'Language channels, shared scrambles and training rooms with cubers around the world.',
-      tag: 'Coming soon',
-    },
     pro: {
       title: 'CubeVerse Pro',
       text: 'Advanced algorithm libraries, personal training plans and deeper stats.',
@@ -130,7 +127,6 @@ export const en = {
       profile: 'My Profile',
       history: 'History',
       wca: 'WCA & Legends',
-      community: 'Community',
       signIn: 'Sign In',
     },
     prototype: 'Prototype build. Sign-in and profile use demo data stored only in this browser.',
@@ -171,7 +167,35 @@ export const en = {
     forgotTitle: 'Reset your password',
     forgotSub: 'Enter your email and we will send you a reset link.',
     forgotSubmit: 'Send reset link',
-    forgotSent: 'Demo mode: in the full version, a reset link would be sent to {email}.',
+    forgotSent: 'If an account exists for {email}, a reset link is on its way. Check your inbox and spam folder.',
+    forgotSentDemo: 'Demo mode: in the full version, a reset link would be sent to {email}.',
+    confirmTitle: 'Check your email',
+    confirmSent: 'We sent a confirmation link to {email}. Open it to activate your account. The link signs you in.',
+    resend: 'Resend email',
+    resent: 'Sent again. Check your inbox and spam folder.',
+    resetTitle: 'Choose a new password',
+    resetSub: 'Enter a new password for your account.',
+    newPassword: 'New password',
+    resetSubmit: 'Save new password',
+    resetDone: 'Your password was changed and you are signed in.',
+    resetInvalid: 'This reset link is invalid or has expired. Ask for a new one.',
+    requestNew: 'Send a new link',
+    callbackTitle: 'Confirming your email',
+    callbackWorking: 'One moment while we confirm your email…',
+    callbackDone: 'Email confirmed. Your account is active and you are signed in.',
+    callbackError: 'This confirmation link is invalid or has expired. Sign in and we will help you get a new one.',
+    goProfile: 'Go to my profile',
+    errors: {
+      invalid_credentials: 'Email or password is incorrect.',
+      email_not_confirmed: 'Confirm your email first. Open the link we sent when you signed up.',
+      rate_limited: 'Too many attempts or emails right now. Wait a few minutes and try again.',
+      email_not_sendable: 'We could not send an email to this address right now. Try again later.',
+      weak_password: 'Choose a stronger password.',
+      same_password: 'The new password must be different from the old one.',
+      no_session: 'This link is no longer valid. Ask for a new one.',
+      network: 'No connection to the server. Check your internet and try again.',
+      unknown: 'Something went wrong. Please try again.',
+    },
     backToSignIn: 'Back to sign in',
     toSignUp: 'New to CubeVerse?',
     toSignUpLink: 'Create an account',
@@ -187,8 +211,12 @@ export const en = {
     back: 'Back to home',
     other: 'Or take a look at',
     demoProfile: 'You are signed in with a demo account. Your real profile, stats and achievements arrive in a later stage.',
+    realProfile: 'Signed in as {email}. Your profile, stats and achievements arrive in a later stage.',
   },
   learn: learnEn,
+  timer: timerEn,
+  history: historyEn,
+  wca: wcaEn,
   notFound: {
     title: 'This face is not on the cube.',
     text: 'The page you are looking for does not exist.',

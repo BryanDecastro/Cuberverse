@@ -13,7 +13,7 @@ describe('status checks are safe on any cube', () => {
     const { solvedCorners } = await import('./firstLayer')
     const { solvedMiddleEdges } = await import('./secondLayer')
     const { topShape } = await import('./yellowCross')
-    const { cornersUp, frontRightUp } = await import('./yellowFace')
+    const { cornersUp, readyForSune, topCorners } = await import('./yellowFace')
     const { cornersPlaced, finishedSides, isCubeSolved } = await import('./lastLayer')
     const rand = seededRandom(21)
     for (let i = 0; i < 300; i++) {
@@ -29,7 +29,8 @@ describe('status checks are safe on any cube', () => {
         topShape(s)
         isYellowCross(s)
         cornersUp(s)
-        frontRightUp(s)
+        readyForSune(s)
+        topCorners(s)
         isYellowFace(s)
         cornersPlaced(s)
         finishedSides(s)

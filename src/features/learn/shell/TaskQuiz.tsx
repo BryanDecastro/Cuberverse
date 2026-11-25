@@ -1,12 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
-import { ArrowRight, Flag, Lightbulb } from 'lucide-react'
+import { ArrowRight, Flag, Hand, Lightbulb } from 'lucide-react'
 import { fromColorMap, type CubeState } from '@/features/cube/model'
 import type { Face } from '@/features/cube/moves'
-import { parseAlg, type Move } from '@/features/cube/moves'
+import { mergeMove, parseAlg, type Move } from '@/features/cube/moves'
 import { useI18n } from '@/i18n/I18nProvider'
 import { cx, fmt } from '@/lib/format'
 import { Feedback } from '../components/Feedback'
-import { MovePad } from '../components/MovePad'
 import { ViewControls } from '../components/ViewControls'
 import { ControlsSlot, PanelSlot, useCubeEvents, useLessonCube } from './LessonCubeContext'
 import { useMoveKeys } from './useMoveKeys'
@@ -56,6 +55,8 @@ export function TaskQuiz({
   const [count, setCount] = useState(0)
   const [locked, setLocked] = useState(false)
   const pending = useRef(false)
+  // Moves made in this task, with a repeated turn counted once (U U is one move, U2).
+  const done = useRef<Move[]>([])
   const total = exercises.length
   const cur = exercises[ex]
   const task = cur.kind === 'task' ? cur : null
@@ -65,6 +66,7 @@ export function TaskQuiz({
     cube.api.current?.setState(parseAlg(task.setup))
     cube.api.current?.lookAt('home')
     setCount(0)
+    done.current = []
     setLocked(false)
   }
 
@@ -87,7 +89,8 @@ export function TaskQuiz({
   const onMove = (m: Move) => {
     if (!task || locked || result?.ok) return
     cube.api.current?.play([m])
-    setCount((c) => c + 1)
+    done.current = mergeMove(done.current, m)
+    setCount(done.current.length)
     pending.current = true
     setResult(null)
   }
@@ -123,7 +126,9 @@ export function TaskQuiz({
       <ControlsSlot>
         {task ? (
           <>
-            <MovePad onMove={onMove} disabled={locked || !!result?.ok} />
+            <p className="flex items-center justify-center gap-2 rounded-xl border border-accent/30 bg-accent/[0.08] px-3 py-2.5 text-center text-sm text-ink-2" data-gesture-hint="">
+              <Hand size={16} className="shrink-0 text-[#7fb0ff]" aria-hidden="true" /> {t.learn.gestureHint}
+            </p>
             <p className="mt-3 flex items-center justify-center gap-2 text-center text-xs text-ink-3">
               <Lightbulb size={14} className="text-st-yellow" aria-hidden="true" /> {task.hint}
             </p>

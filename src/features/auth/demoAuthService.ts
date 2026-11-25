@@ -2,7 +2,8 @@ import { storage } from '@/lib/storage'
 import type { AuthService, User } from './types'
 
 /**
- * DEMO ONLY. No network, no real accounts, passwords are never stored.
+ * DEMO ONLY, used when Supabase is not configured (no VITE_SUPABASE_URL).
+ * No network, no real accounts, passwords are never stored.
  * The "session" is a demo profile kept in this browser's localStorage.
  */
 const KEY = 'demo-session'
@@ -30,8 +31,13 @@ function nameFromEmail(email: string): string {
 }
 
 export const demoAuthService: AuthService = {
+  supportsGoogle: true,
+  isDemo: true,
   async getSession() {
     return storage.get<User | null>(KEY, null)
+  },
+  onChange() {
+    return () => {}
   },
   async signInWithGoogle() {
     await wait(700)
@@ -49,10 +55,19 @@ export const demoAuthService: AuthService = {
     await wait(700)
     const user = makeUser(name, email, 'email')
     storage.set(KEY, user)
-    return user
+    return { user, needsConfirmation: false }
+  },
+  async resendConfirmation() {
+    await wait(400)
   },
   async requestPasswordReset() {
     await wait(600)
+  },
+  async updatePassword() {
+    await wait(400)
+    const user = storage.get<User | null>(KEY, null)
+    if (!user) throw new Error('No demo session')
+    return user
   },
   async signOut() {
     storage.remove(KEY)

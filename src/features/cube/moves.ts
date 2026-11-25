@@ -73,3 +73,19 @@ export function randomSequence(length: number, rand: () => number = Math.random)
   }
   return out
 }
+
+/**
+ * Add a move to a list the way a cuber writes it down: the same quarter turn
+ * done twice in a row is one half turn (U then U is U2, U′ then U′ is U2).
+ * Anything else is kept as it was done.
+ */
+export function mergeMove(list: Move[], m: Move): Move[] {
+  const last = list[list.length - 1]
+  if (last && last === m && !m.endsWith('2')) return [...list.slice(0, -1), `${m[0]}2` as Move]
+  return [...list, m]
+}
+
+/** Several moves, merged one after another. */
+export function mergeMoves(list: Move[], moves: Move[]): Move[] {
+  return moves.reduce(mergeMove, list)
+}

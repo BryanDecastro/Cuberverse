@@ -217,7 +217,7 @@ export function FinalSolveLesson() {
       lessonId="final-solve"
       parts={f.parts}
       complete={f.complete}
-      nextTo={routes.timer}
+      nextTo={routes.timer + '?first=1'}
       renderPart={(i, finish) => {
         if (i < PARTS.length) {
           const Part = PARTS[i]

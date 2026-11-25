@@ -1,17 +1,19 @@
 import { useId, useState, type FormEvent, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Check, Eye, EyeOff, FlaskConical, MailCheck } from 'lucide-react'
+import { AlertCircle, ArrowLeft, Check, Eye, EyeOff, FlaskConical, MailCheck } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Kicker } from '@/components/ui/Kicker'
 import { StickerStrip } from '@/components/ui/StickerStrip'
 import { LazyCube } from '@/features/cube/LazyCube'
 import { useAuth } from '@/features/auth/AuthProvider'
+import { AuthFailure } from '@/features/auth/types'
+import { initialAuthHash } from '@/lib/supabase'
 import { useI18n } from '@/i18n/I18nProvider'
 import { routes } from '@/config/routes'
 import { cx, fmt } from '@/lib/format'
 import { useMediaQuery } from '@/lib/useMediaQuery'
 
-export type AuthMode = 'signin' | 'signup' | 'forgot'
+export type AuthMode = 'signin' | 'signup' | 'forgot' | 'reset' | 'callback'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 
@@ -55,6 +57,25 @@ function Field({
   )
 }
 
+/** An error Supabase put in the link itself (for example an expired confirmation link). */
+const linkError = (() => {
+  const p = new URLSearchParams(initialAuthHash.replace(/^#/, ''))
+  return p.get('error_description') || p.get('error') || null
+})()
+
+/** A success or problem message inside the card, in the existing panel style. */
+function Notice({ ok, children }: { ok: boolean; children: ReactNode }) {
+  return (
+    <div
+      className={cx('mt-7 rounded-2xl border p-5', ok ? 'border-st-green/30 bg-st-green/[0.08]' : 'border-[#ff6b7d]/35 bg-[#ff6b7d]/[0.07]')}
+      role={ok ? 'status' : 'alert'}
+    >
+      {ok ? <MailCheck size={26} className="text-[#4fe08f]" aria-hidden="true" /> : <AlertCircle size={26} className="text-[#ff8a96]" aria-hidden="true" />}
+      {children}
+    </div>
+  )
+}
+
 const inputCls =
   'h-12 w-full rounded-xl border bg-canvas/70 px-4 text-[0.98rem] text-ink placeholder:text-ink-3/80 outline-none transition-[border-color,box-shadow] duration-300 focus:border-accent-hover focus:shadow-[0_0_0_4px_rgb(47_123_255/0.18)]'
 
@@ -74,34 +95,67 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
   const [errors, setErrors] = useState<{ name?: string; email?: string; password?: string }>({})
   const [busy, setBusy] = useState<'form' | 'google' | null>(null)
   const [sent, setSent] = useState(false)
+  const [confirmFor, setConfirmFor] = useState<string | null>(null)
+  const [formError, setFormError] = useState<{ code: string; text: string } | null>(null)
+  const [resend, setResend] = useState<'idle' | 'busy' | 'done'>('idle')
+  const [resetDone, setResetDone] = useState(false)
 
   const isUp = mode === 'signup'
   const isForgot = mode === 'forgot'
+  const isReset = mode === 'reset'
+  const isCallback = mode === 'callback'
+  // Reset needs the session opened by the email link; the callback reports how the link went.
+  const resetLinkOk = auth.recovering || (auth.ready && !!auth.user)
 
   const validate = () => {
     const e: typeof errors = {}
     if (isUp && !name.trim()) e.name = a.errName
-    if (!EMAIL_RE.test(email.trim())) e.email = a.errEmail
+    if (!isReset && !EMAIL_RE.test(email.trim())) e.email = a.errEmail
     if (!isForgot && password.length < 8) e.password = a.errPassword
     setErrors(e)
     return Object.keys(e).length === 0
   }
 
+  const explain = (err: unknown) => {
+    const code = err instanceof AuthFailure ? err.code : 'unknown'
+    setFormError({ code, text: a.errors[code as keyof typeof a.errors] ?? a.errors.unknown })
+  }
+
+  const onResend = async (to: string) => {
+    setResend('busy')
+    try {
+      await auth.resendConfirmation(to)
+      setResend('done')
+    } catch (err) {
+      setResend('idle')
+      explain(err)
+    }
+  }
+
   const onSubmit = async (ev: FormEvent) => {
     ev.preventDefault()
+    setFormError(null)
     if (!validate()) return
     setBusy('form')
     try {
       if (isForgot) {
         await auth.requestPasswordReset(email.trim())
         setSent(true)
+      } else if (isReset) {
+        await auth.updatePassword(password)
+        setResetDone(true)
       } else if (isUp) {
-        await auth.signUp(name, email.trim(), password)
-        navigate(routes.profile)
+        const res = await auth.signUp(name, email.trim(), password)
+        if (res.needsConfirmation) {
+          setResend('idle')
+          setConfirmFor(email.trim())
+        } else navigate(routes.profile)
       } else {
         await auth.signInWithEmail(email.trim(), password)
         navigate(routes.profile)
       }
+    } catch (err) {
+      explain(err)
     } finally {
       setBusy(null)
     }
@@ -112,13 +166,45 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
     try {
       await auth.signInWithGoogle()
       navigate(routes.profile)
+    } catch (err) {
+      explain(err)
     } finally {
       setBusy(null)
     }
   }
 
-  const title = isForgot ? a.forgotTitle : isUp ? a.signUpTitle : a.signInTitle
-  const sub = isForgot ? a.forgotSub : isUp ? a.signUpSub : a.signInSub
+  const title = confirmFor
+    ? a.confirmTitle
+    : isCallback
+      ? a.callbackTitle
+      : isReset
+        ? a.resetTitle
+        : isForgot
+          ? a.forgotTitle
+          : isUp
+            ? a.signUpTitle
+            : a.signInTitle
+  const sub = confirmFor || isCallback ? '' : isReset ? a.resetSub : isForgot ? a.forgotSub : isUp ? a.signUpSub : a.signInSub
+  const backLink = (
+    <Link to={routes.signIn} className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[#8fb8ff] hover:text-ink">
+      <ArrowLeft size={16} aria-hidden="true" /> {a.backToSignIn}
+    </Link>
+  )
+  const profileLink = (
+    <Link to={routes.profile} className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[#8fb8ff] hover:text-ink">
+      {a.goProfile}
+    </Link>
+  )
+  const resendButton = (to: string) => (
+    <button
+      type="button"
+      onClick={() => onResend(to)}
+      disabled={resend !== 'idle'}
+      className="mt-3 text-sm font-semibold text-[#8fb8ff] hover:text-ink disabled:opacity-70"
+    >
+      {resend === 'busy' ? a.working : resend === 'done' ? a.resent : a.resend}
+    </button>
+  )
 
   return (
     <div className="mx-auto grid min-h-[100svh] max-w-[1320px] items-center gap-10 px-4 pb-14 pt-24 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:px-8">
@@ -151,12 +237,14 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
           <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent/70 to-transparent" aria-hidden="true" />
           <StickerStrip width="w-16" />
 
-          <div className="mt-5 flex items-start gap-2.5 rounded-xl border border-st-yellow/25 bg-st-yellow/[0.07] px-3.5 py-2.5 text-[0.82rem] leading-snug text-ink-2">
-            <FlaskConical size={16} className="mt-0.5 shrink-0 text-st-yellow" aria-hidden="true" />
-            {a.demoBanner}
-          </div>
+          {auth.isDemo && (
+            <div className="mt-5 flex items-start gap-2.5 rounded-xl border border-st-yellow/25 bg-st-yellow/[0.07] px-3.5 py-2.5 text-[0.82rem] leading-snug text-ink-2">
+              <FlaskConical size={16} className="mt-0.5 shrink-0 text-st-yellow" aria-hidden="true" />
+              {a.demoBanner}
+            </div>
+          )}
 
-          {!isForgot && (
+          {(mode === 'signin' || mode === 'signup') && !confirmFor && (
             <div role="tablist" aria-label={a.tabSignIn + ' / ' + a.tabSignUp} className="mt-6 grid grid-cols-2 rounded-xl border border-line bg-canvas/60 p-1">
               {(['signin', 'signup'] as const).map((m) => (
                 <Link
@@ -179,19 +267,66 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
           <h2 id={`${uid}-title`} className="mt-7 font-display text-[1.75rem] font-semibold tracking-tight">
             {title}
           </h2>
-          <p className="mt-1.5 text-ink-2">{sub}</p>
+          {sub && <p className="mt-1.5 text-ink-2">{sub}</p>}
 
-          {isForgot && sent ? (
+          {confirmFor ? (
+            <Notice ok>
+              <p className="mt-3 text-sm leading-relaxed text-ink-2" data-auth-state="confirm-sent">
+                {fmt(a.confirmSent, { email: confirmFor })}
+              </p>
+              {resendButton(confirmFor)}
+              {formError && <p className="mt-2 text-sm text-[#ff8a96]">{formError.text}</p>}
+              <div>{backLink}</div>
+            </Notice>
+          ) : isCallback ? (
+            linkError || (auth.ready && !auth.user) ? (
+              <Notice ok={false}>
+                <p className="mt-3 text-sm leading-relaxed text-ink-2" data-auth-state="callback-error">
+                  {a.callbackError}
+                </p>
+                <div>{backLink}</div>
+              </Notice>
+            ) : auth.user ? (
+              <Notice ok>
+                <p className="mt-3 text-sm leading-relaxed text-ink-2" data-auth-state="callback-done">
+                  {a.callbackDone}
+                </p>
+                <div>{profileLink}</div>
+              </Notice>
+            ) : (
+              <p className="mt-7 text-sm text-ink-2" role="status">
+                {a.callbackWorking}
+              </p>
+            )
+          ) : isReset && resetDone ? (
+            <Notice ok>
+              <p className="mt-3 text-sm leading-relaxed text-ink-2" data-auth-state="reset-done">
+                {a.resetDone}
+              </p>
+              <div>{profileLink}</div>
+            </Notice>
+          ) : isReset && auth.ready && !resetLinkOk ? (
+            <Notice ok={false}>
+              <p className="mt-3 text-sm leading-relaxed text-ink-2" data-auth-state="reset-invalid">
+                {a.resetInvalid}
+              </p>
+              <Link to={routes.forgot} className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[#8fb8ff] hover:text-ink">
+                {a.requestNew}
+              </Link>
+            </Notice>
+          ) : isForgot && sent ? (
             <div className="mt-7 rounded-2xl border border-st-green/30 bg-st-green/[0.08] p-5" role="status">
               <MailCheck size={26} className="text-[#4fe08f]" aria-hidden="true" />
-              <p className="mt-3 text-sm leading-relaxed text-ink-2">{fmt(a.forgotSent, { email: email.trim() })}</p>
+              <p className="mt-3 text-sm leading-relaxed text-ink-2" data-auth-state="reset-sent">
+                {fmt(auth.isDemo ? a.forgotSentDemo : a.forgotSent, { email: email.trim() })}
+              </p>
               <Link to={routes.signIn} className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[#8fb8ff] hover:text-ink">
                 <ArrowLeft size={16} aria-hidden="true" /> {a.backToSignIn}
               </Link>
             </div>
           ) : (
             <>
-              {!isForgot && (
+              {(mode === 'signin' || mode === 'signup') && auth.supportsGoogle && (
                 <>
                   <button
                     type="button"
@@ -210,7 +345,7 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
                 </>
               )}
 
-              <form noValidate onSubmit={onSubmit} className={cx('grid gap-4', isForgot && 'mt-7')}>
+              <form noValidate onSubmit={onSubmit} className={cx('grid gap-4', (isForgot || isReset || !auth.supportsGoogle) && 'mt-7')}>
                 {isUp && (
                   <Field id={`${uid}-name`} label={a.name} error={errors.name}>
                     <input
@@ -225,6 +360,7 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
                     />
                   </Field>
                 )}
+                {!isReset && (
                 <Field id={`${uid}-email`} label={a.email} error={errors.email}>
                   <input
                     id={`${uid}-email`}
@@ -239,13 +375,14 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
                     aria-describedby={`${uid}-email-err`}
                   />
                 </Field>
+                )}
                 {!isForgot && (
                   <Field
                     id={`${uid}-pw`}
-                    label={a.password}
+                    label={isReset ? a.newPassword : a.password}
                     error={errors.password}
                     aside={
-                      !isUp && (
+                      mode === 'signin' && (
                         <Link to={routes.forgot} className="text-sm text-[#8fb8ff] hover:text-ink">
                           {a.forgot}
                         </Link>
@@ -257,7 +394,7 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
                         id={`${uid}-pw`}
                         type={show ? 'text' : 'password'}
                         className={cx(inputCls, 'pr-12', errors.password ? 'border-[#ff6b7d]' : 'border-line-strong/60')}
-                        autoComplete={isUp ? 'new-password' : 'current-password'}
+                        autoComplete={isUp || isReset ? 'new-password' : 'current-password'}
                         placeholder={a.passwordPh}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
@@ -277,13 +414,23 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
                   </Field>
                 )}
 
-                <Button type="submit" size="lg" className="mt-2 w-full" disabled={busy !== null}>
-                  {busy === 'form' ? a.working : isForgot ? a.forgotSubmit : isUp ? a.submitUp : a.submitIn}
+                {formError && (
+                  <div className="flex items-start gap-2 text-sm text-[#ff8a96]" role="alert" data-auth-error={formError.code}>
+                    <AlertCircle size={16} className="mt-0.5 shrink-0" aria-hidden="true" />
+                    <div>
+                      {formError.text}
+                      {formError.code === 'email_not_confirmed' && EMAIL_RE.test(email.trim()) && <div>{resendButton(email.trim())}</div>}
+                    </div>
+                  </div>
+                )}
+
+                <Button type="submit" size="lg" className="mt-2 w-full" disabled={busy !== null || (isReset && !auth.ready)}>
+                  {busy === 'form' ? a.working : isReset ? a.resetSubmit : isForgot ? a.forgotSubmit : isUp ? a.submitUp : a.submitIn}
                 </Button>
               </form>
 
               <div className="mt-6 text-center text-sm text-ink-3">
-                {isForgot ? (
+                {isForgot || isReset ? (
                   <Link to={routes.signIn} className="inline-flex items-center gap-2 font-semibold text-[#8fb8ff] hover:text-ink">
                     <ArrowLeft size={16} aria-hidden="true" /> {a.backToSignIn}
                   </Link>

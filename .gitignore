@@ -4,3 +4,5 @@ dist
 .env
 .env.*
 !.env.example
+# Copied from node_modules by scripts/copy-cubing.mjs
+public/vendor/

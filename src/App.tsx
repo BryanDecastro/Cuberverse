@@ -9,6 +9,9 @@ const AuthPage = lazy(() => import('@/pages/Auth'))
 const ComingSoon = lazy(() => import('@/pages/ComingSoon'))
 const NotFound = lazy(() => import('@/pages/NotFound'))
 const LearnPage = lazy(() => import('@/pages/Learn'))
+const TimerPage = lazy(() => import('@/pages/Timer'))
+const HistoryPage = lazy(() => import('@/pages/History'))
+const WcaPage = lazy(() => import('@/pages/Wca'))
 
 /** Per-route document titles. */
 function TitleSync() {
@@ -21,11 +24,12 @@ function TitleSync() {
       [routes.timer]: `${t.nav.timer} | CubeVerse`,
       [routes.history]: `${t.nav.history} | CubeVerse`,
       [routes.wca]: `${t.nav.wca} | CubeVerse`,
-      [routes.community]: `${t.nav.community} | CubeVerse`,
       [routes.profile]: `${t.nav.profile} | CubeVerse`,
       [routes.signIn]: `${t.auth.tabSignIn} | CubeVerse`,
       [routes.signUp]: `${t.auth.tabSignUp} | CubeVerse`,
       [routes.forgot]: `${t.auth.forgotTitle} | CubeVerse`,
+      [routes.resetPassword]: `${t.auth.resetTitle} | CubeVerse`,
+      [routes.authCallback]: `${t.auth.callbackTitle} | CubeVerse`,
     }
     document.title = map[pathname] ?? (pathname.startsWith(routes.learn + '/') ? map[routes.learn] : 'CubeVerse')
   }, [pathname, t])
@@ -36,10 +40,6 @@ function AppRoutes() {
   const { t } = useI18n()
   // These pages are still placeholders. Each gets its real component in a later stage.
   const placeholders = [
-    { path: routes.timer, page: t.nav.timer },
-    { path: routes.history, page: t.nav.history },
-    { path: routes.wca, page: t.nav.wca },
-    { path: routes.community, page: t.nav.community },
     { path: routes.profile, page: t.nav.profile },
   ]
 
@@ -50,15 +50,22 @@ function AppRoutes() {
           <Route index element={<Home />} />
           <Route path={routes.learn} element={<Navigate to={routes.learn + '/notation'} replace />} />
           <Route path={routes.learn + '/:lessonId'} element={<LearnPage />} />
+          <Route path={routes.timer} element={<TimerPage />} />
+          <Route path={routes.history} element={<HistoryPage />} />
+          <Route path={routes.wca} element={<WcaPage />} />
           {placeholders.map((p) => (
             <Route key={p.path} path={p.path} element={<ComingSoon page={p.page} path={p.path} />} />
           ))}
+          {/* The Community section was removed; old links go home. */}
+          <Route path="/community" element={<Navigate to={routes.home} replace />} />
           <Route path="*" element={<NotFound />} />
         </Route>
         <Route element={<Layout bare />}>
           <Route path={routes.signIn} element={<AuthPage key="signin" mode="signin" />} />
           <Route path={routes.signUp} element={<AuthPage key="signup" mode="signup" />} />
           <Route path={routes.forgot} element={<AuthPage key="forgot" mode="forgot" />} />
+          <Route path={routes.resetPassword} element={<AuthPage key="reset" mode="reset" />} />
+          <Route path={routes.authCallback} element={<AuthPage key="callback" mode="callback" />} />
         </Route>
       </Routes>
     </Suspense>

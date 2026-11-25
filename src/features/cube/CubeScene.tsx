@@ -1,5 +1,5 @@
 import { useEffect, useImperativeHandle, useMemo, useRef, type MutableRefObject, type Ref } from 'react'
-import { Canvas, useFrame } from '@react-three/fiber'
+import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import * as THREE from 'three'
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js'
 import { invertSequence, moveGeometry, randomSequence, type Face, type Move } from './moves'
@@ -73,6 +73,12 @@ export type CubeSceneProps = {
   pitchRange?: [number, number]
   /** Grey out every piece the predicate rejects (it receives the piece's own sticker colors). */
   focus?: ((colors: Face[]) => boolean) | null
+  /**
+   * Turn layers by dragging. When set, a drag that starts on the cube is read as a
+   * face turn (mouse or finger) and reported here; the caller decides whether to play it.
+   * A drag that starts beside the cube still moves the camera.
+   */
+  onGesture?: ((move: Move) => void) | null
 }
 
 /* ------------------------------------------------------------------ */
@@ -171,6 +177,40 @@ function pushMerged(history: Move[], m: Move) {
 /* Camera (view) model, kept apart from piece turns on purpose         */
 /* ------------------------------------------------------------------ */
 type View = { yaw: number; pitch: number; targetYaw: number; targetPitch: number; dragging: boolean }
+
+/** A drag that started on the cube: where it started, and the hit point in cube coordinates. */
+type Grab = { id: number; x: number; y: number; point: THREE.Vector3; done: boolean }
+type Gesture = {
+  grab: Grab | null
+  /** Set by the cube: turns a screen drag (px) from the grab into a move, or null (middle slice). */
+  resolve: ((g: Grab, dx: number, dy: number) => Move | null) | null
+}
+
+const FACE_ON_AXIS: Record<0 | 1 | 2, [Face, Face]> = { 0: ['R', 'L'], 1: ['U', 'D'], 2: ['F', 'B'] }
+
+/**
+ * The move a drag means. `point` is where the drag started, in cube coordinates
+ * (cubies at -1..1, faces at about +-1.5); `along` is the in-plane axis the drag
+ * follows and `sign` its direction. Pure, so it is unit-tested.
+ */
+export function gestureMove(point: Vec3, along: 0 | 1 | 2, sign: 1 | -1): Move | null {
+  const abs = point.map(Math.abs)
+  const k = (abs[0] >= abs[1] && abs[0] >= abs[2] ? 0 : abs[1] >= abs[2] ? 1 : 2) as 0 | 1 | 2
+  if (along === k) return null
+  const n: Vec3 = [0, 0, 0]
+  n[k] = Math.sign(point[k]) || 1
+  const tv: Vec3 = [0, 0, 0]
+  tv[along] = sign
+  // Turning about r = n x t moves the grabbed sticker along t.
+  const r: Vec3 = [n[1] * tv[2] - n[2] * tv[1], n[2] * tv[0] - n[0] * tv[2], n[0] * tv[1] - n[1] * tv[0]]
+  const j = ([0, 1, 2] as const).find((i) => r[i] !== 0)!
+  const sigma = r[j]
+  const layer = Math.max(-1, Math.min(1, Math.round(point[j])))
+  if (layer === 0) return null // middle slices are not part of this notation
+  const face = FACE_ON_AXIS[j][layer > 0 ? 0 : 1]
+  // A face's clockwise turn is a negative rotation about its outward axis.
+  return (sigma === -layer ? face : `${face}'`) as Move
+}
 
 const HOME_YAW = -0.62
 const HOME_PITCH = 0.52
@@ -390,6 +430,8 @@ type Turn = { move: Move; axis: 'x' | 'y' | 'z'; target: number; t: number; dura
 type CubeProps = Required<Pick<CubeSceneProps, 'autoplay' | 'reducedMotion' | 'quarterTurnSeconds' | 'idleSpin'>> &
   Pick<CubeSceneProps, 'apiRef' | 'onSequence' | 'onStep' | 'onMoveStart' | 'onMoveEnd' | 'onIdle' | 'onReady' | 'highlight' | 'labels' | 'arrow' | 'focus'> & {
     view: MutableRefObject<View>
+    gesture: MutableRefObject<Gesture>
+    gestures: boolean
   }
 
 function Cube({
@@ -409,8 +451,11 @@ function Cube({
   labels = false,
   arrow = null,
   focus = null,
+  gesture,
+  gestures,
 }: CubeProps) {
   const { body, sticker, bodyMat, stickerMats } = useCubeAssets()
+  const { camera, size } = useThree()
   const spin = useRef<THREE.Group>(null)
   const root = useRef<THREE.Group>(null)
   const pivot = useRef<THREE.Group>(null)
@@ -621,9 +666,47 @@ function Cube({
     }
   })
 
+  // Drag-to-turn: pick the in-plane axis the screen drag follows (both axes are projected to
+  // the screen from the grab point), then let gestureMove name the move.
+  gesture.current.resolve = (g, dx, dy) => {
+    const rt = root.current
+    if (!rt) return null
+    rt.updateMatrixWorld()
+    const p = g.point
+    const abs = [Math.abs(p.x), Math.abs(p.y), Math.abs(p.z)]
+    const k = abs[0] >= abs[1] && abs[0] >= abs[2] ? 0 : abs[1] >= abs[2] ? 1 : 2
+    const toScreen = (v: THREE.Vector3) => {
+      const w = rt.localToWorld(v.clone()).project(camera)
+      return [(w.x * size.width) / 2, (-w.y * size.height) / 2]
+    }
+    const base = toScreen(p)
+    let best: { along: 0 | 1 | 2; sign: 1 | -1; score: number } | null = null
+    for (const a of [0, 1, 2] as const) {
+      if (a === k) continue
+      const step = p.clone()
+      step.setComponent(a, p.getComponent(a) + 1)
+      const s = toScreen(step)
+      const vx = s[0] - base[0]
+      const vy = s[1] - base[1]
+      const len = Math.hypot(vx, vy) || 1
+      const dot = (dx * vx + dy * vy) / len
+      if (!best || Math.abs(dot) > best.score) best = { along: a, sign: dot >= 0 ? 1 : -1, score: Math.abs(dot) }
+    }
+    return best ? gestureMove([p.x, p.y, p.z], best.along, best.sign) : null
+  }
+
+  const onPointerDown = (e: ThreeEvent<PointerEvent>) => {
+    if (!gestures || !root.current) return
+    const ne = e.nativeEvent
+    if (ne.pointerType === 'mouse' && ne.button !== 0) return
+    e.stopPropagation()
+    root.current.updateMatrixWorld()
+    gesture.current.grab = { id: ne.pointerId, x: ne.clientX, y: ne.clientY, point: root.current.worldToLocal(e.point.clone()), done: false }
+  }
+
   return (
     <group ref={spin}>
-      <group ref={root} scale={0.98}>
+      <group ref={root} scale={0.98} onPointerDown={gestures ? onPointerDown : undefined}>
         <group ref={pivot} />
         {positions.map((p, i) => (
           <group
@@ -733,6 +816,7 @@ export default function CubeScene({
   arrow = null,
   pitchRange = [-0.3, 1.1],
   focus = null,
+  onGesture = null,
 }: CubeSceneProps) {
   const view = useRef<View>({
     yaw: initialYaw,
@@ -744,6 +828,10 @@ export default function CubeScene({
   const wrap = useRef<HTMLDivElement>(null)
   const range = useRef(pitchRange)
   range.current = pitchRange
+  const gesture = useRef<Gesture>({ grab: null, resolve: null })
+  const onGestureRef = useRef(onGesture)
+  onGestureRef.current = onGesture
+  const gestures = !!onGesture
 
   // Pointer drag moves the camera. Horizontal only on touch, so vertical page scroll still works.
   useEffect(() => {
@@ -752,7 +840,13 @@ export default function CubeScene({
     let lastX = 0
     let lastY = 0
     let id: number | null = null
+    // With gestures on, a drag the cube grabbed (it started on a piece) turns a layer instead.
+    const grabbed = (e: PointerEvent) => gesture.current.grab?.id === e.pointerId
     const down = (e: PointerEvent) => {
+      if (grabbed(e)) {
+        el.setPointerCapture(e.pointerId)
+        return
+      }
       id = e.pointerId
       lastX = e.clientX
       lastY = e.clientY
@@ -761,6 +855,18 @@ export default function CubeScene({
       el.style.cursor = 'grabbing'
     }
     const move = (e: PointerEvent) => {
+      const g = gesture.current.grab
+      if (g && g.id === e.pointerId) {
+        if (g.done) return
+        const dx = e.clientX - g.x
+        const dy = e.clientY - g.y
+        // One turn per drag, decided once the finger or mouse has clearly moved.
+        if (Math.hypot(dx, dy) < (e.pointerType === 'touch' ? 14 : 10)) return
+        g.done = true
+        const m = gesture.current.resolve?.(g, dx, dy)
+        if (m) onGestureRef.current?.(m)
+        return
+      }
       if (e.pointerId !== id) return
       const v = view.current
       v.targetYaw += (e.clientX - lastX) * 0.01
@@ -772,6 +878,10 @@ export default function CubeScene({
       lastY = e.clientY
     }
     const up = (e: PointerEvent) => {
+      if (grabbed(e)) {
+        gesture.current.grab = null
+        return
+      }
       if (e.pointerId !== id) return
       id = null
       view.current.dragging = false
@@ -790,7 +900,7 @@ export default function CubeScene({
   }, [])
 
   return (
-    <div ref={wrap} className={className} style={{ touchAction: 'pan-y', cursor: 'grab' }}>
+    <div ref={wrap} className={className} style={{ touchAction: gestures ? 'none' : 'pan-y', cursor: 'grab' }} data-gestures={gestures ? '' : undefined}>
       <Canvas
         frameloop={active ? 'always' : 'never'}
         flat
@@ -822,6 +932,8 @@ export default function CubeScene({
           labels={labels}
           arrow={arrow}
           focus={focus}
+          gesture={gesture}
+          gestures={gestures}
         />
         {pedestal && <Pedestal reducedMotion={reducedMotion} />}
       </Canvas>

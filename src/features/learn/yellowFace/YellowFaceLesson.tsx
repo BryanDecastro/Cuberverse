@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
-import { AlertTriangle, ArrowUpToLine, Hash, RotateCw, ShieldCheck } from 'lucide-react'
+import { ArrowUpToLine, Hand, ListChecks, RotateCw, ShieldCheck } from 'lucide-react'
 import { applyMoves, solvedState } from '@/features/cube/model'
 import { parseAlg, type Face } from '@/features/cube/moves'
 import { isSecondLayerSolved } from '@/features/cube/secondLayer'
-import { isYellowCross } from '@/features/cube/yellowCross'
-import { cornersUp, cornerTwistScramble, frontRightUp, isYellowFace, planYellowFace, type FaceStep } from '@/features/cube/yellowFace'
+import { cornersUp, cornerTwistScramble, isYellowFace, planYellowFace, readyForSune, SUNE, type FaceStep } from '@/features/cube/yellowFace'
 import type { Dictionary } from '@/i18n/en'
 import { useI18n } from '@/i18n/I18nProvider'
 import { cx, fmt } from '@/lib/format'
@@ -15,13 +14,17 @@ import { LessonShell } from '../shell/LessonShell'
 import { PlannerPractice } from '../shell/PlannerPractice'
 import { StepPlayer } from '../shell/StepPlayer'
 import { TaskQuiz } from '../shell/TaskQuiz'
-import { YF_AFTER_FIRST, YF_CASES, YF_DONE, YF_FULL, type YfCase } from './positions'
+import { CaseDiagram } from './CaseDiagram'
+import { YF_CASE_IDS, YF_CASES, YF_DONE, YF_FULL, YF_TURN_TASK, type YfCase } from './positions'
 
 /** 'D' is the yellow color id. Keep centers and every yellow piece in color. */
 const YELLOW_LAYER = (colors: Face[]) => colors.length === 1 || colors.includes('D')
 
-const stepText = (t: Dictionary, step: FaceStep) =>
-  fmt(t.learn.yellowFace.steps[step.kind], { moves: step.moves.map(displayMove).join(' '), round: step.round ?? 1 })
+const WHERE = ['left', 'up', 'front'] as const
+const stepText = (t: Dictionary, step: FaceStep) => {
+  const y = t.learn.yellowFace.steps
+  return fmt(y[step.kind], { moves: step.moves.map(displayMove).join(' '), where: y.where[WHERE[Math.min(step.up, 2)]] })
+}
 const planFrom = (setup: string) => planYellowFace(applyMoves(solvedState(), parseAlg(setup)))
 
 function useFocus() {
@@ -90,80 +93,121 @@ function PartGoal() {
   )
 }
 
-const CASES = Object.keys(YF_CASES) as YfCase[]
-
-function PartCorner() {
+/** The Sune itself, shown on the case it solves in one go. */
+function PartSune() {
   const { t } = useI18n()
   const p = t.learn.yellowFace.p2
-  const [selected, setSelected] = useState<YfCase>('right')
-  // Only this corner's rounds: the steps before the first top turn.
-  const steps = useMemo(() => {
-    const plan = planFrom(YF_CASES[selected].setup)
-    const cut = plan.findIndex((s) => s.kind === 'next')
-    return cut === -1 ? plan : plan.slice(0, cut)
-  }, [selected])
+  useFocus()
+  const steps = useMemo(() => [{ moves: SUNE.slice(0, 4) }, { moves: SUNE.slice(4) }], [])
+  return (
+    <StepPlayer
+      setup={YF_CASES.sune.setup}
+      steps={steps}
+      describe={(i) => p.steps[i]}
+      doneText={p.done}
+      panelTop={
+        <>
+          <p className="leading-relaxed text-ink-2">{p.lead}</p>
+          <div className="mt-4 rounded-2xl border border-accent/40 bg-accent/[0.08] p-4">
+            <p className="text-sm font-semibold text-ink">{p.algTitle}</p>
+            <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[1.5rem] font-semibold text-white" data-sune="">
+              <span>{p.halves[0]}</span>
+              <span className="text-ink-3">·</span>
+              <span>{p.halves[1]}</span>
+            </p>
+          </div>
+          <div className="mt-4 rounded-2xl border border-line bg-canvas/50 p-4">
+            <p className="flex items-center gap-2 text-sm font-semibold text-ink">
+              <Hand size={16} className="text-[#8fb8ff]" aria-hidden="true" /> {p.tipsTitle}
+            </p>
+            <ul className="mt-2 grid gap-2">
+              {p.tips.map((tip) => (
+                <li key={tip} className="text-sm leading-relaxed text-ink-2">
+                  {tip}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </>
+      }
+    />
+  )
+}
+
+/** All seven cases: how each looks, how to hold it, and the Sunes that finish it. */
+function PartCases() {
+  const { t } = useI18n()
+  const p = t.learn.yellowFace.p3
+  const [selected, setSelected] = useState<YfCase>('sune')
+  useFocus()
+  const c = YF_CASES[selected]
+  const steps = useMemo(() => planFrom(c.setup), [c.setup])
+  const sunes = (n: number) => fmt(n === 1 ? p.sunes : p.sunesMany, { n })
   return (
     <>
       <ControlsSlot>
         <p className="mb-3 text-center text-sm text-ink-3">{p.pick}</p>
-        <div role="radiogroup" aria-label={p.pick} className="mb-4 grid grid-cols-2 gap-2">
-          {CASES.map((c) => (
-            <button
-              key={c}
-              type="button"
-              role="radio"
-              aria-checked={selected === c}
-              onClick={() => setSelected(c)}
-              className={cx(
-                'btn rounded-2xl border px-3 py-2.5 text-left text-sm font-semibold transition-[background-color,border-color] duration-300',
-                selected === c ? 'border-accent-hover bg-accent/20 text-white' : 'border-line-strong/60 bg-canvas/60 text-ink hover:bg-panel-2',
-              )}
-            >
-              {p.cases[c].name}
-            </button>
-          ))}
+        <div role="radiogroup" aria-label={p.pick} className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4" data-cases="">
+          {YF_CASE_IDS.map((id) => {
+            const cs = YF_CASES[id]
+            return (
+              <button
+                key={id}
+                type="button"
+                role="radio"
+                aria-checked={selected === id}
+                onClick={() => setSelected(id)}
+                data-case={id}
+                className={cx(
+                  'btn flex flex-col items-center gap-1.5 rounded-2xl border px-2 py-2.5 text-center transition-[background-color,border-color] duration-300',
+                  selected === id ? 'border-accent-hover bg-accent/20' : 'border-line-strong/60 bg-canvas/60 hover:bg-panel-2',
+                )}
+              >
+                <CaseDiagram top={cs.top} label={p.cases[id].name} className="h-16 w-16" />
+                <span className={cx('text-[0.8rem] font-semibold leading-tight', selected === id ? 'text-white' : 'text-ink')}>{p.cases[id].name}</span>
+                <span className="text-[0.7rem] text-ink-3">
+                  {p.up[cs.up]} · {sunes(cs.sunes)}
+                </span>
+              </button>
+            )
+          })}
         </div>
       </ControlsSlot>
       <StepPlayer
         key={selected}
-        setup={YF_CASES[selected].setup}
+        setup={c.setup}
         steps={steps}
         describe={(i) => stepText(t, steps[i])}
         doneText={p.done}
         panelTop={
           <>
             <p className="leading-relaxed text-ink-2">{p.lead}</p>
-            <div className="mt-4 rounded-2xl border border-accent/35 bg-accent/[0.07] p-4">
-              <p className="flex items-center gap-2 text-sm font-semibold text-ink">
-                <Hash size={16} className="text-[#8fb8ff]" aria-hidden="true" /> {p.countTitle}
-              </p>
-              <p className="mt-1.5 text-sm leading-relaxed text-ink-2">{p.countText}</p>
+            <div className="mt-4 flex gap-4 rounded-2xl border border-accent/40 bg-accent/[0.08] p-4" data-hold={selected}>
+              <CaseDiagram top={c.top} label={p.cases[selected].name} className="h-20 w-20 shrink-0" />
+              <div>
+                <p className="text-sm font-semibold text-ink">
+                  {p.holdTitle}: {p.cases[selected].name}
+                </p>
+                <p className="mt-1.5 text-sm leading-relaxed text-ink-2">{p.cases[selected].hold}</p>
+              </div>
             </div>
             <div className="mt-4 rounded-2xl border border-st-yellow/30 bg-st-yellow/[0.06] p-4">
               <p className="flex items-center gap-2 text-sm font-semibold text-ink">
-                <AlertTriangle size={16} className="text-st-yellow" aria-hidden="true" /> {p.brokenTitle}
+                <ListChecks size={16} className="text-st-yellow" aria-hidden="true" /> {p.ruleTitle}
               </p>
-              <p className="mt-1.5 text-sm leading-relaxed text-ink-2">{p.brokenText}</p>
+              <ol className="mt-2 grid gap-2">
+                {p.rule.map((r, i) => (
+                  <li key={r} className="flex gap-2.5 text-sm leading-relaxed text-ink-2">
+                    <span className="font-mono text-st-yellow">{i}</span> {r}
+                  </li>
+                ))}
+              </ol>
+              <p className="mt-2 text-sm leading-relaxed text-ink-2">{p.ruleEnd}</p>
             </div>
           </>
         }
       />
     </>
-  )
-}
-
-function PartAll() {
-  const { t } = useI18n()
-  const p = t.learn.yellowFace.p3
-  const steps = useMemo(() => planFrom(YF_FULL), [])
-  return (
-    <StepPlayer
-      setup={YF_FULL}
-      steps={steps}
-      describe={(i) => stepText(t, steps[i])}
-      doneText={p.finished}
-      panelTop={<p className="leading-relaxed text-ink-2">{p.lead}</p>}
-    />
   )
 }
 
@@ -196,16 +240,16 @@ function PartQuiz({ onFinish }: { onFinish: () => void }) {
       exercises={[
         { kind: 'choice', question: q.q1, options: [q.q1options[1], q.q1options[0], q.q1options[2]], correct: q.q1options[0], ok: q.fb.q1ok, no: q.fb.q1no },
         { kind: 'choice', question: q.q2, options: [q.q2options[1], q.q2options[0], q.q2options[2]], correct: q.q2options[0], ok: q.fb.q2ok, no: q.fb.q2no },
-        { kind: 'task', question: q.q3, hint: q.q3hint, setup: YF_CASES.right.setup, done: (s) => frontRightUp(s) && cornersUp(s) === 3, maxMoves: 8, ok: q.fb.q3ok, no: q.fb.q3no },
-        { kind: 'task', question: q.q4, hint: q.q4hint, setup: YF_AFTER_FIRST, done: (s) => !frontRightUp(s) && isYellowCross(s), maxMoves: 2, ok: q.fb.q4ok, no: q.fb.q4no },
+        { kind: 'task', question: q.q3, hint: q.q3hint, setup: YF_CASES.sune.setup, done: isYellowFace, maxMoves: 7, ok: q.fb.q3ok, no: q.fb.q3no },
+        { kind: 'task', question: q.q4, hint: q.q4hint, setup: YF_TURN_TASK, done: (s) => cornersUp(s) === 2 && readyForSune(s), maxMoves: 2, ok: q.fb.q4ok, no: q.fb.q4no },
       ]}
     />
   )
 }
 
-const PARTS = [PartGoal, PartCorner, PartAll, PartPractice]
+const PARTS = [PartGoal, PartSune, PartCases, PartPractice]
 
-/** Lesson 6: orient the top corners for a fully yellow face. */
+/** Lesson 6: orient the top corners with the Sune for a fully yellow face. */
 export function YellowFaceLesson() {
   const { t } = useI18n()
   const y = t.learn.yellowFace

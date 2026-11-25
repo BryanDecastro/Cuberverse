@@ -19,6 +19,11 @@ export type LessonCube = {
   setFocus: (f: ((colors: Face[]) => boolean) | null) => void
   /** True once the 3D cube has loaded and its api can be called. */
   ready: boolean
+  /**
+   * Let the learner turn layers by dragging the cube. The active part registers its move
+   * handler; passing the same function again with `null` unregisters only if still current.
+   */
+  setGesture: (handler: ((m: Move) => void) | null, owner?: (m: Move) => void) => void
   /** Everyone listening to cube events (a part and any players inside it). */
   listeners: RefObject<Set<CubeEvents>>
   slots: { controls: HTMLElement | null; panel: HTMLElement | null }

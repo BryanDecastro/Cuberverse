@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Keyboard, Lightbulb, Play, RotateCcw, Undo2 } from 'lucide-react'
-import { invertMove, type Face, type Move } from '@/features/cube/moves'
+import { invertMove, mergeMove, type Face, type Move } from '@/features/cube/moves'
 import { useI18n } from '@/i18n/I18nProvider'
 import { fmt } from '@/lib/format'
 import { MovePad } from '../components/MovePad'
@@ -36,7 +36,8 @@ export function PartPractice() {
   // The engine queues moves strictly in order, so fast taps never overlap.
   const doMove = (m: Move) => {
     cube.api.current?.play([m])
-    setMoves((list) => [...list, m])
+    // The same turn twice in a row is written as one half turn (U U -> U2).
+    setMoves((list) => mergeMove(list, m))
   }
   useMoveKeys(doMove)
 

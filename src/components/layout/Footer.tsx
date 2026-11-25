@@ -17,7 +17,6 @@ export function Footer() {
       links: [
         { to: routes.history, label: f.links.history },
         { to: routes.wca, label: f.links.wca },
-        { to: routes.community, label: f.links.community },
       ],
     },
   ]

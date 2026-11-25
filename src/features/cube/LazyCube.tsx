@@ -29,6 +29,8 @@ function usePageVisible(): boolean {
 type Props = Omit<CubeSceneProps, 'active' | 'reducedMotion' | 'className'> & {
   className?: string
   label: string
+  /** Stop rendering entirely (for example while a timed solve is running). */
+  paused?: boolean
 }
 
 /**
@@ -36,7 +38,7 @@ type Props = Omit<CubeSceneProps, 'active' | 'reducedMotion' | 'className'> & {
  * SVG fallback without WebGL, rendering paused off screen and on hidden tabs,
  * and reduced motion respected live.
  */
-export function LazyCube({ className = '', label, ...sceneProps }: Props) {
+export function LazyCube({ className = '', label, paused = false, ...sceneProps }: Props) {
   const { ref, inView } = useInView<HTMLDivElement>({ rootMargin: '120px', threshold: 0 })
   const pageVisible = usePageVisible()
   const reducedMotion = useReducedMotion()
@@ -46,7 +48,7 @@ export function LazyCube({ className = '', label, ...sceneProps }: Props) {
     <div ref={ref} className={`relative ${className}`} role="img" aria-label={label}>
       {webgl ? (
         <Suspense fallback={<CubeIllustration className="absolute inset-0 m-auto h-[70%] w-[70%] opacity-90" />}>
-          <CubeScene {...sceneProps} active={inView && pageVisible} reducedMotion={reducedMotion} className="absolute inset-0" />
+          <CubeScene {...sceneProps} active={inView && pageVisible && !paused} reducedMotion={reducedMotion} className="absolute inset-0" />
         </Suspense>
       ) : (
         <CubeIllustration className="absolute inset-0 m-auto h-[80%] w-[80%]" />

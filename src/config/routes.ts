@@ -5,9 +5,12 @@ export const routes = {
   timer: '/timer',
   history: '/history',
   wca: '/wca',
-  community: '/community',
   profile: '/profile',
   signIn: '/signin',
   signUp: '/signup',
   forgot: '/forgot-password',
+  /** Where password-reset emails land: choose a new password. */
+  resetPassword: '/reset-password',
+  /** Where sign-up confirmation emails land. */
+  authCallback: '/auth/callback',
 } as const

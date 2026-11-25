@@ -33,9 +33,9 @@ export default function ComingSoon({ page, path }: { page: string; path: string 
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <p className="truncate font-display font-semibold">{user.name}</p>
-                <DemoBadge label={t.nav.demo} />
+                {user.isDemo && <DemoBadge label={t.nav.demo} />}
               </div>
-              <p className="mt-1 text-sm text-ink-3">{t.comingSoon.demoProfile}</p>
+              <p className="mt-1 text-sm text-ink-3">{user.isDemo ? t.comingSoon.demoProfile : fmt(t.comingSoon.realProfile, { email: user.email })}</p>
             </div>
           </div>
         )}
