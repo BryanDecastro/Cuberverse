@@ -196,7 +196,7 @@ Every move (drag, keyboard, button or demo) pops up its letter with what it mean
 Sign-up, sign-in, email confirmation, password reset, sign-out and a persistent session, all
 handled by Supabase Auth (`features/auth/supabaseAuthService.ts`, client in `lib/supabase.ts`).
 Passwords go straight to Supabase over HTTPS and are stored there hashed; the app never keeps them.
-Users appear in Supabase under Authentication > Users. Timer times stay in this browser only.
+Users appear in Supabase under Authentication > Users.
 
 - Configure with `.env.local` (see `.env.example`): `VITE_SUPABASE_URL` and
   `VITE_SUPABASE_PUBLISHABLE_KEY` (public by design). Never add the service_role / secret key.
@@ -207,6 +207,21 @@ Users appear in Supabase under Authentication > Users. Timer times stay in this 
   `<site>/auth/callback` and `<site>/reset-password` as redirect URLs. The built-in email service
   only sends to team members, a few per hour: set up custom SMTP before real users sign up.
 - The Google button only shows in demo mode (Google sign-in is not part of this stage).
+
+## Account sync: times and lesson progress
+
+Signed-in users keep their Timer sessions and solves (with +2 / DNF) and their lesson progress in
+their account, so they see the same history, chart, achievements and course progress on any device.
+
+- Tables (`supabase/migrations/20261127000000_timer_and_progress.sql`): `timer_sessions`,
+  `timer_solves`, `user_progress` (lesson progress + active session per event). Row level
+  security: each user can only read and change their own rows; anonymous requests get nothing.
+- `features/sync/`: `SyncProvider` downloads the account once per sign-in; `cloud.ts` keeps a
+  per-user outbox in localStorage and uploads changes in batches (retries when back online, every 30 s).
+- The site always works from a local copy (fast and offline). Local changes still queued win over
+  the download; a solve deleted on another device disappears everywhere.
+- Guests keep everything on the device. At sign-in, a guest's times and lessons on that device are
+  added to the account. Signing out shows the device's own data again.
 
 ## Structure
 
@@ -221,6 +236,7 @@ src/
   features/achievements/      achievement rules
   features/history/           timeline artwork (SVG)
   features/wca/               world records, event icons, competition finder (WCA API)
+  features/sync/              account sync for times and lesson progress (Supabase)
   features/learn/             lesson list, saved progress, sidebar, move pad, notation lesson (5 parts)
   i18n/learn.en.ts, learn.pt.ts  all lesson copy
   components/layout/          Header, Footer, Layout, menus

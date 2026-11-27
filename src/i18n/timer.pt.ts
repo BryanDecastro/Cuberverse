@@ -125,5 +125,10 @@ export const timerPt: Widen<typeof timerEn> = {
     orientation: 'Branco em cima, verde na frente, como em competição.',
     cubeLabel: 'O cubo embaralhado em 3D',
   },
-  storageNote: 'Por enquanto, os tempos ficam salvos só neste navegador.',
+  sync: {
+    saved: 'Seus tempos ficam salvos na sua conta.',
+    saving: 'Salvando na sua conta…',
+    offline: 'Sem conexão: salvo neste aparelho e enviado para a sua conta quando a internet voltar.',
+  },
+  storageNote: 'Salvo neste aparelho. Entre na sua conta para guardar seus tempos nela.',
 }

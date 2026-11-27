@@ -2,12 +2,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Award, Check, Eye, Gauge, RotateCcw, Save, TrendingUp, Zap } from 'lucide-react'
 import { Kicker } from '@/components/ui/Kicker'
-import { completedLessons, evaluateAchievements, takeNewlyUnlocked, type AchievementId } from '@/features/achievements/achievements'
+import { evaluateAchievements, takeNewlyUnlocked, type AchievementId } from '@/features/achievements/achievements'
+import { useLearnProgress } from '@/features/learn/LearnProgressProvider'
+import { useSync } from '@/features/sync/SyncProvider'
 import { routes } from '@/config/routes'
 import { ScrambleVisualizer } from '@/features/timer/ScrambleVisualizer'
 import { TimeChart } from '@/features/timer/TimeChart'
 import { AchievementsCard, HistoryTable, PenaltyButtons, ScrambleBar, SessionCard, StatTiles, TimerDisplay } from '@/features/timer/TimerPanels'
-import { TimerStoreProvider, useTimerStore } from '@/features/timer/TimerStore'
+import { useTimerStore } from '@/features/timer/TimerStore'
 import { averageOf, best, formatSolve, formatTime } from '@/features/timer/stats'
 import { EVENT_LABEL, TIMER_EVENTS, type Penalty, type TimerEvent } from '@/features/timer/types'
 import { useScramble } from '@/features/timer/useScramble'
@@ -74,7 +76,9 @@ function TimerView() {
   const [toast, setToast] = useState<AchievementId[] | null>(null)
 
   // Achievements, worked out from lessons and every saved solve.
-  const statuses = useMemo(() => evaluateAchievements({ lessons: completedLessons(), solves: store.allSolves() }), [store])
+  const { progress } = useLearnProgress()
+  const sync = useSync()
+  const statuses = useMemo(() => evaluateAchievements({ lessons: progress.completed, solves: store.allSolves() }), [store, progress.completed])
   const mounted = useRef(false)
   useEffect(() => {
     const fresh = takeNewlyUnlocked(statuses)
@@ -304,7 +308,9 @@ function TimerView() {
           </span>
         </button>
         <span id="inspection-help" className="sr-only">{tm.inspection.help}</span>
-        <p className="text-[0.7rem] text-ink-3 sm:ml-auto sm:text-xs">{tm.storageNote}</p>
+        <p className="text-[0.7rem] text-ink-3 sm:ml-auto sm:text-xs" data-sync-note="">
+          {!sync.userId ? tm.storageNote : sync.offline ? tm.sync.offline : sync.pending ? tm.sync.saving : tm.sync.saved}
+        </p>
       </div>
 
       {mode === 'simple' ? (
@@ -365,9 +371,5 @@ function TimerView() {
 }
 
 export default function TimerPage() {
-  return (
-    <TimerStoreProvider>
-      <TimerView />
-    </TimerStoreProvider>
-  )
+  return <TimerView />
 }

@@ -3,7 +3,6 @@ import { ArrowLeft, Clock } from 'lucide-react'
 import { Kicker } from '@/components/ui/Kicker'
 import { CubeIllustration } from '@/features/cube/CubeIllustration'
 import { CourseSidebar } from '@/features/learn/components/CourseSidebar'
-import { LearnProgressProvider } from '@/features/learn/LearnProgressProvider'
 import { AVAILABLE_LESSONS, LESSON_IDS, LESSON_KEY, isLessonId, lessonPath, type LessonId } from '@/features/learn/lessons'
 import { NotationLesson } from '@/features/learn/notation/NotationLesson'
 import { WhiteCrossLesson } from '@/features/learn/whiteCross/WhiteCrossLesson'
@@ -71,7 +70,7 @@ export default function LearnPage() {
   const View = AVAILABLE_LESSONS.has(lessonId) ? LESSON_VIEWS[lessonId] : undefined
 
   return (
-    <LearnProgressProvider>
+    <>
       <div className="mx-auto max-w-[1440px] px-4 pb-10 pt-24 sm:px-6 lg:px-8">
         <header className="mb-5 lg:mb-6">
           <Kicker>{t.learn.kicker}</Kicker>
@@ -91,6 +90,6 @@ export default function LearnPage() {
           </div>
         </div>
       </div>
-    </LearnProgressProvider>
+    </>
   )
 }

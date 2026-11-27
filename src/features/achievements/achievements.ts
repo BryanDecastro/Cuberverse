@@ -12,11 +12,6 @@ export type AchievementId = (typeof ACHIEVEMENT_IDS)[number]
 
 export type AchievementStatus = { id: AchievementId; unlocked: boolean; progress: number }
 
-/** Lesson ids completed, read straight from the Learn progress store. */
-export function completedLessons(): string[] {
-  return storage.get<{ completed?: string[] }>('learn-progress', {}).completed ?? []
-}
-
 const SUB: Partial<Record<AchievementId, number>> = { sub60: 60000, sub30: 30000, sub20: 20000 }
 
 export function evaluateAchievements(input: { lessons: string[]; solves: Solve[] }): AchievementStatus[] {

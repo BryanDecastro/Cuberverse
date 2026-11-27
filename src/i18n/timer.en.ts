@@ -122,5 +122,10 @@ export const timerEn = {
     orientation: 'White on top, green in front, as in competition.',
     cubeLabel: 'The scrambled cube in 3D',
   },
-  storageNote: 'Times are saved only in this browser for now.',
+  sync: {
+    saved: 'Your times are saved to your account.',
+    saving: 'Saving to your account…',
+    offline: 'Offline: saved on this device, sent to your account when you are back online.',
+  },
+  storageNote: 'Saved on this device. Sign in to keep your times in your account.',
 }
