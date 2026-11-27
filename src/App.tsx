@@ -6,7 +6,7 @@ import { routes } from '@/config/routes'
 import Home from '@/pages/Home'
 
 const AuthPage = lazy(() => import('@/pages/Auth'))
-const ComingSoon = lazy(() => import('@/pages/ComingSoon'))
+const ProfilePage = lazy(() => import('@/pages/Profile'))
 const NotFound = lazy(() => import('@/pages/NotFound'))
 const LearnPage = lazy(() => import('@/pages/Learn'))
 const TimerPage = lazy(() => import('@/pages/Timer'))
@@ -37,12 +37,6 @@ function TitleSync() {
 }
 
 function AppRoutes() {
-  const { t } = useI18n()
-  // These pages are still placeholders. Each gets its real component in a later stage.
-  const placeholders = [
-    { path: routes.profile, page: t.nav.profile },
-  ]
-
   return (
     <Suspense fallback={<div className="min-h-[100svh]" />}>
       <Routes>
@@ -53,9 +47,7 @@ function AppRoutes() {
           <Route path={routes.timer} element={<TimerPage />} />
           <Route path={routes.history} element={<HistoryPage />} />
           <Route path={routes.wca} element={<WcaPage />} />
-          {placeholders.map((p) => (
-            <Route key={p.path} path={p.path} element={<ComingSoon page={p.page} path={p.path} />} />
-          ))}
+          <Route path={routes.profile} element={<ProfilePage />} />
           {/* The Community section was removed; old links go home. */}
           <Route path="/community" element={<Navigate to={routes.home} replace />} />
           <Route path="*" element={<NotFound />} />

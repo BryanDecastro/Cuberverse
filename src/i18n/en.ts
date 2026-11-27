@@ -6,6 +6,7 @@ import { learnEn } from './learn.en'
 import { timerEn } from './timer.en'
 import { historyEn } from './history.en'
 import { wcaEn } from './wca.en'
+import { profileEn } from './profile.en'
 
 export const en = {
   meta: {
@@ -217,6 +218,7 @@ export const en = {
   timer: timerEn,
   history: historyEn,
   wca: wcaEn,
+  profile: profileEn,
   notFound: {
     title: 'This face is not on the cube.',
     text: 'The page you are looking for does not exist.',

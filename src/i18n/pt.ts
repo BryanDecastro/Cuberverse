@@ -3,6 +3,7 @@ import { learnPt } from './learn.pt'
 import { timerPt } from './timer.pt'
 import { historyPt } from './history.pt'
 import { wcaPt } from './wca.pt'
+import { profilePt } from './profile.pt'
 
 /** Português (Brasil). Must mirror the shape of en.ts. */
 export const pt: Dictionary = {
@@ -215,6 +216,7 @@ export const pt: Dictionary = {
   timer: timerPt,
   history: historyPt,
   wca: wcaPt,
+  profile: profilePt,
   notFound: {
     title: 'Essa face não existe no cubo.',
     text: 'A página que você procura não existe.',

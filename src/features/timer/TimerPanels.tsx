@@ -210,7 +210,7 @@ export function StatTiles({ solves }: { solves: Solve[] }) {
 /* ------------------------------------------------------------------ */
 /* History                                                             */
 /* ------------------------------------------------------------------ */
-function ago(t: ReturnType<typeof useI18n>['t'], iso: string): string {
+export function ago(t: ReturnType<typeof useI18n>["t"], iso: string): string {
   const h = t.timer.history
   const min = Math.floor((Date.now() - new Date(iso).getTime()) / 60000)
   if (min < 1) return h.justNow

@@ -1,0 +1,65 @@
+import type { profileEn } from './profile.en'
+import type { Widen } from './en'
+
+/** Copy da página de perfil (Português BR). Deve espelhar profile.en.ts. */
+export const profilePt: Widen<typeof profileEn> = {
+  kicker: 'Meu perfil',
+  memberSince: 'Membro desde {date}',
+  synced: 'Seus tempos e aulas ficam salvos na sua conta.',
+  guest: {
+    title: 'Entre para ver seu perfil',
+    text: 'Seu perfil reúne o progresso no curso, seus melhores tempos e a sua evolução, em qualquer aparelho.',
+    signIn: 'Entrar',
+    signUp: 'Criar conta',
+  },
+  course: {
+    title: 'Curso Iniciante 3x3',
+    done: 'Curso concluído',
+    progress: '{n} de {total} aulas',
+    notStarted: 'Não iniciada',
+    inProgress: 'Em andamento · parte {part} de {total}',
+    completed: 'Concluída',
+    continue: 'Continuar: {lesson}',
+    start: 'Começar o curso',
+    review: 'Rever o curso',
+  },
+  events: {
+    title: 'Modalidades que resolvo',
+    solves: '{n} resoluções',
+    solveOne: '1 resolução',
+    none: 'Nenhuma resolução cronometrada ainda.',
+    more: 'Outras modalidades aparecem aqui quando você cronometrar.',
+  },
+  stats: {
+    title: '3x3 em resumo',
+    best: 'Melhor tempo',
+    mean: 'Média geral',
+    ao5: 'ao5 atual',
+    bestAo5: 'Melhor ao5',
+    ao12: 'ao12 atual',
+    bestAo12: 'Melhor ao12',
+    total: 'Resoluções',
+    dnfs: 'DNFs',
+    on: 'em {date}',
+    empty: 'Nenhuma resolução de 3x3 ainda. Cronometre a primeira para começar seu histórico.',
+    openTimer: 'Abrir o Timer',
+  },
+  trend: {
+    title: 'Estou melhorando?',
+    better: 'Você ficou mais rápido: suas últimas {n} resoluções têm média {last}, {delta} melhor que as {n} primeiras ({first}).',
+    worse: 'Suas últimas {n} resoluções têm média {last}, {delta} mais lentas que as {n} primeiras ({first}). Aqueça e continue treinando.',
+    steady: 'Estável: suas últimas {n} resoluções têm média {last}, quase igual às {n} primeiras ({first}).',
+    needMore: 'Faça pelo menos 6 resoluções para ver se você está ficando mais rápido.',
+    betterTag: 'Melhorando',
+    worseTag: 'Mais lento ultimamente',
+    steadyTag: 'Estável',
+  },
+  chartTitle: 'Histórico de tempos no 3x3',
+  chartNote: 'Todas as resoluções de 3x3, de todas as sessões. A linha roxa é a sua média de 5.',
+  recent: {
+    title: 'Últimas resoluções de 3x3',
+    time: 'Tempo',
+    when: 'Quando',
+    all: 'Ver tudo no Timer',
+  },
+}
