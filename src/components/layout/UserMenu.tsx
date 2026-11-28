@@ -24,14 +24,6 @@ export function Avatar({ name, size = 34 }: { name: string; size?: number }) {
   )
 }
 
-export function DemoBadge({ label }: { label: string }) {
-  return (
-    <span className="inline-block rounded-md bg-st-yellow/15 px-2 py-0.5 font-mono text-[0.65rem] uppercase tracking-wider text-st-yellow">
-      {label}
-    </span>
-  )
-}
-
 export function UserMenu() {
   const { user, signOut } = useAuth()
   const { t } = useI18n()
@@ -81,9 +73,6 @@ export function UserMenu() {
         <div className="px-3 pb-2 pt-1.5">
           <p className="truncate text-sm font-semibold text-ink">{user.name}</p>
           <p className="truncate text-xs text-ink-3">{user.email}</p>
-          <div className="mt-2">
-            <DemoBadge label={t.nav.demo} />
-          </div>
         </div>
         <div className="my-1 h-px bg-line" />
         <Link

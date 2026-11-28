@@ -9,7 +9,7 @@ import { routes } from '@/config/routes'
 import { cx } from '@/lib/format'
 import { navItems } from './navItems'
 import { LanguageSwitch } from './LanguageSwitch'
-import { Avatar, DemoBadge, UserMenu } from './UserMenu'
+import { Avatar, UserMenu } from './UserMenu'
 
 export function Header() {
   const { t } = useI18n()
@@ -116,9 +116,6 @@ export function Header() {
                 <p className="truncate font-semibold">{user.name}</p>
                 <p className="truncate text-xs text-ink-3">{user.email}</p>
               </div>
-              <span className="ml-auto">
-                <DemoBadge label={t.nav.demo} />
-              </span>
             </div>
           )}
           <ul className="grid gap-1">

@@ -1,14 +1,13 @@
 /**
- * Auth contract. The site uses SupabaseAuthService when VITE_SUPABASE_URL and a
- * publishable key are set, and DemoAuthService (local only, no network) otherwise.
+ * Auth contract, implemented by SupabaseAuthService (real accounts only).
+ * There is no demo or local fallback: without Supabase configured, sign-in is unavailable.
  */
 export type User = {
   id: string
   name: string
   email: string
   avatarSeed: string
-  provider: 'google' | 'email'
-  isDemo: boolean
+  provider: 'email'
   createdAt: string
 }
 
@@ -22,6 +21,7 @@ export type AuthErrorCode =
   | 'same_password'
   | 'no_session'
   | 'network'
+  | 'not_configured'
   | 'unknown'
 
 export class AuthFailure extends Error {
@@ -45,13 +45,12 @@ export type SignUpResult = {
 export type AuthChange = { user: User | null; event: 'signed_in' | 'signed_out' | 'updated' | 'password_recovery' }
 
 export interface AuthService {
-  /** Demo services can also fake Google; the real one handles email and password only. */
-  readonly supportsGoogle: boolean
-  readonly isDemo: boolean
+  /** The session stored in this browser (fast, not yet checked with the server). */
   getSession(): Promise<User | null>
+  /** Ask Supabase whether the stored session is really valid; null when it is not. */
+  verifyUser(): Promise<User | null>
   /** Subscribe to session changes (other tabs, token refresh, email links). Returns an unsubscribe function. */
   onChange(cb: (change: AuthChange) => void): () => void
-  signInWithGoogle(): Promise<User>
   signInWithEmail(email: string, password: string): Promise<User>
   signUp(name: string, email: string, password: string): Promise<SignUpResult>
   resendConfirmation(email: string): Promise<void>

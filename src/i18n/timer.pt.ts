@@ -121,7 +121,6 @@ export const timerPt: Widen<typeof timerEn> = {
     title: 'Visualizador do scramble',
     net: '2D',
     both: 'Ambos',
-    only333: 'O visualizador mostra scrambles de 3x3. Escolha 3x3 para ver.',
     orientation: 'Branco em cima, verde na frente, como em competição.',
     cubeLabel: 'O cubo embaralhado em 3D',
   },

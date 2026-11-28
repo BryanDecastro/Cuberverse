@@ -19,7 +19,7 @@ const Ctx = createContext<SyncValue>({ userId: null, snapshot: null, pending: 0,
 /** Downloads the signed-in user's data once per sign-in and keeps the upload queue moving. */
 export function SyncProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth()
-  const userId = supabaseConfigured && user && !user.isDemo ? user.id : null
+  const userId = supabaseConfigured && user ? user.id : null
   const [snapshot, setSnapshot] = useState<CloudSnapshot | null>(null)
   const [snapshotFor, setSnapshotFor] = useState<string | null>(null)
   const [pending, setPending] = useState(0)

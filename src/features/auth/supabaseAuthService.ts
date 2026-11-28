@@ -10,7 +10,7 @@ import { AuthFailure, type AuthErrorCode, type AuthService, type User } from './
  */
 
 function client() {
-  if (!supabase) throw new AuthFailure('unknown', 'Supabase is not configured')
+  if (!supabase) throw new AuthFailure('not_configured', 'Supabase is not configured (VITE_SUPABASE_URL / VITE_SUPABASE_PUBLISHABLE_KEY missing)')
   return supabase
 }
 
@@ -23,7 +23,6 @@ function toUser(u: SupabaseUser): User {
     email,
     avatarSeed: email || u.id,
     provider: 'email',
-    isDemo: false,
     createdAt: u.created_at,
   }
 }
@@ -48,17 +47,30 @@ function fail(error: AuthError | Error): never {
 const redirect = (path: string) => `${window.location.origin}${path}`
 
 export const supabaseAuthService: AuthService = {
-  supportsGoogle: false,
-  isDemo: false,
-
   async getSession() {
-    const { data, error } = await client().auth.getSession()
+    if (!supabase) return null
+    const { data, error } = await supabase.auth.getSession()
     if (error) return null
     return data.session?.user ? toUser(data.session.user) : null
   },
 
+  async verifyUser() {
+    if (!supabase) return null
+    // getUser() asks the Supabase server, so a forged or revoked session is rejected here.
+    const { data, error } = await supabase.auth.getUser()
+    if (error) {
+      // Offline: keep the stored session instead of signing the person out.
+      if (error.name === 'AuthRetryableFetchError' || error.status === 0) return this.getSession()
+      return null
+    }
+    return data.user ? toUser(data.user) : null
+  },
+
   onChange(cb) {
-    const { data } = client().auth.onAuthStateChange((event, session) => {
+    if (!supabase) return () => {}
+    const { data } = supabase.auth.onAuthStateChange((event, session) => {
+      // The stored session on page load is not trusted until verifyUser() checks it with the server.
+      if (event === 'INITIAL_SESSION') return
       const user = session?.user ? toUser(session.user) : null
       // Run outside the auth lock, as supabase-js recommends for listeners.
       setTimeout(() => {
@@ -69,10 +81,6 @@ export const supabaseAuthService: AuthService = {
       }, 0)
     })
     return () => data.subscription.unsubscribe()
-  },
-
-  async signInWithGoogle() {
-    throw new AuthFailure('unknown', 'Google sign-in is not enabled')
   },
 
   async signInWithEmail(email, password) {

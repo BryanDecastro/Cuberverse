@@ -15,7 +15,7 @@ npm run build    # production build into dist/
 
 - Design system (tokens in `src/styles/index.css`), Header, Footer, environment background
 - Home: 3D hero cube that scrambles and solves itself with real layer turns, three paths, features, journey, interactive notation pad, roadmap, final CTA
-- Sign in / Create account / Forgot password (demo auth, clearly labeled)
+- Sign in / Create account / Forgot password (Supabase Auth, see below)
 - Routing for every section. Profile is still a placeholder. The Community section was removed (old `/community` links go to Home)
 - English and Português (BR), auto-detected, switchable in the header
 
@@ -200,13 +200,14 @@ Users appear in Supabase under Authentication > Users.
 
 - Configure with `.env.local` (see `.env.example`): `VITE_SUPABASE_URL` and
   `VITE_SUPABASE_PUBLISHABLE_KEY` (public by design). Never add the service_role / secret key.
-  Without them the app falls back to the old local demo sign-in.
+  There is no demo or local fallback: without them, sign-in shows "unavailable" and nobody is signed
+  in. On Vercel, set both in Settings > Environment Variables, then redeploy.
 - Routes: `/signin`, `/signup`, `/forgot-password`, `/reset-password` (link from the reset email),
   `/auth/callback` (link from the confirmation email).
 - In Supabase: Authentication > URL Configuration must list the site URL and
   `<site>/auth/callback` and `<site>/reset-password` as redirect URLs. The built-in email service
   only sends to team members, a few per hour: set up custom SMTP before real users sign up.
-- The Google button only shows in demo mode (Google sign-in is not part of this stage).
+- A stored session only counts once Supabase confirms it (`auth.getUser()`); the profile needs it.
 
 ## Account sync: times and lesson progress
 
@@ -222,6 +223,12 @@ their account, so they see the same history, chart, achievements and course prog
   the download; a solve deleted on another device disappears everywhere.
 - Guests keep everything on the device. At sign-in, a guest's times and lessons on that device are
   added to the account. Signing out shows the device's own data again.
+
+## Scramble pictures for every event
+
+The Timer's scramble visualizer draws 2x2 and 4x4 too (wide moves like Rw/Uw/Fw included):
+`features/cube/nxn.ts` is an N x N sticker model; `nxn.test.ts` proves it matches the 3x3 model
+exactly on 200 random scrambles. 3x3 keeps the WebGL cube; 2x2 and 4x4 get an SVG 3D view and the net.
 
 ## Structure
 

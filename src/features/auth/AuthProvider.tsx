@@ -1,20 +1,18 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { supabaseConfigured } from '@/lib/supabase'
-import type { AuthService, SignUpResult, User } from './types'
-import { demoAuthService } from './demoAuthService'
-import { supabaseAuthService } from './supabaseAuthService'
-
-// Real Supabase accounts when the environment is configured; the local demo otherwise.
-const service: AuthService = supabaseConfigured ? supabaseAuthService : demoAuthService
+import { storage } from '@/lib/storage'
+import type { SignUpResult, User } from './types'
+import { supabaseAuthService as service } from './supabaseAuthService'
 
 type AuthValue = {
+  /** The signed-in user, only after Supabase has confirmed the session. */
   user: User | null
+  /** True once the session check has finished (signed in or not). */
   ready: boolean
+  /** False when the site was built without the Supabase variables: sign-in is then unavailable. */
+  configured: boolean
   /** True after a password-reset link was opened in this tab (the user may now set a new password). */
   recovering: boolean
-  isDemo: boolean
-  supportsGoogle: boolean
-  signInWithGoogle: () => Promise<User>
   signInWithEmail: (email: string, password: string) => Promise<User>
   signUp: (name: string, email: string, password: string) => Promise<SignUpResult>
   resendConfirmation: (email: string) => Promise<void>
@@ -31,9 +29,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [recovering, setRecovering] = useState(false)
 
   useEffect(() => {
+    // Remove the profile left by the old demo sign-in, if this browser still has one.
+    storage.remove('demo-session')
+    if (!supabaseConfigured) {
+      console.error('Supabase is not configured: set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY (locally in .env.local, and in Vercel > Settings > Environment Variables).')
+      setReady(true)
+      return
+    }
     let alive = true
-    service.getSession().then((u) => {
+    // Only a session the Supabase server confirms counts as signed in.
+    service.verifyUser().then((u) => {
       if (!alive) return
+      if (!u) void service.signOut().catch(() => {})
       setUser(u)
       setReady(true)
     })
@@ -41,7 +48,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const off = service.onChange((change) => {
       if (!alive) return
       setUser(change.user)
-      setReady(true)
       if (change.event === 'password_recovery') setRecovering(true)
       if (change.event === 'signed_out') setRecovering(false)
     })
@@ -51,32 +57,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const wrap = useCallback(
-    <A extends unknown[]>(fn: (...args: A) => Promise<User>) =>
-      async (...args: A) => {
-        const u = await fn(...args)
-        setUser(u)
-        return u
-      },
-    [],
-  )
+  const signInWithEmail = useCallback(async (email: string, password: string) => {
+    const u = await service.signInWithEmail(email, password)
+    setUser(u)
+    return u
+  }, [])
 
   const value = useMemo<AuthValue>(
     () => ({
       user,
       ready,
+      configured: supabaseConfigured,
       recovering,
-      isDemo: service.isDemo,
-      supportsGoogle: service.supportsGoogle,
-      signInWithGoogle: wrap(service.signInWithGoogle),
-      signInWithEmail: wrap(service.signInWithEmail),
+      signInWithEmail,
       signUp: async (name, email, password) => {
         const res = await service.signUp(name, email, password)
         if (res.user) setUser(res.user)
         return res
       },
-      resendConfirmation: service.resendConfirmation,
-      requestPasswordReset: service.requestPasswordReset,
+      resendConfirmation: (email) => service.resendConfirmation(email),
+      requestPasswordReset: (email) => service.requestPasswordReset(email),
       updatePassword: async (password) => {
         const u = await service.updatePassword(password)
         setUser(u)
@@ -88,7 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null)
       },
     }),
-    [user, ready, recovering, wrap],
+    [user, ready, recovering, signInWithEmail],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

@@ -118,7 +118,6 @@ export const timerEn = {
     title: 'Scramble visualizer',
     net: '2D',
     both: 'Both',
-    only333: 'The visualizer shows 3x3 scrambles. Pick 3x3 to see it.',
     orientation: 'White on top, green in front, as in competition.',
     cubeLabel: 'The scrambled cube in 3D',
   },

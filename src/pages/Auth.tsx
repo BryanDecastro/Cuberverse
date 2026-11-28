@@ -1,6 +1,6 @@
 import { useId, useState, type FormEvent, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { AlertCircle, ArrowLeft, Check, Eye, EyeOff, FlaskConical, MailCheck } from 'lucide-react'
+import { AlertCircle, ArrowLeft, Check, Eye, EyeOff, MailCheck } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Kicker } from '@/components/ui/Kicker'
 import { StickerStrip } from '@/components/ui/StickerStrip'
@@ -16,17 +16,6 @@ import { useMediaQuery } from '@/lib/useMediaQuery'
 export type AuthMode = 'signin' | 'signup' | 'forgot' | 'reset' | 'callback'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
-
-function GoogleMark() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
-      <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z" />
-      <path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z" />
-      <path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z" />
-      <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z" />
-    </svg>
-  )
-}
 
 function Field({
   label,
@@ -93,7 +82,7 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
   const [password, setPassword] = useState('')
   const [show, setShow] = useState(false)
   const [errors, setErrors] = useState<{ name?: string; email?: string; password?: string }>({})
-  const [busy, setBusy] = useState<'form' | 'google' | null>(null)
+  const [busy, setBusy] = useState<'form' | null>(null)
   const [sent, setSent] = useState(false)
   const [confirmFor, setConfirmFor] = useState<string | null>(null)
   const [formError, setFormError] = useState<{ code: string; text: string } | null>(null)
@@ -154,18 +143,6 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
         await auth.signInWithEmail(email.trim(), password)
         navigate(routes.profile)
       }
-    } catch (err) {
-      explain(err)
-    } finally {
-      setBusy(null)
-    }
-  }
-
-  const onGoogle = async () => {
-    setBusy('google')
-    try {
-      await auth.signInWithGoogle()
-      navigate(routes.profile)
     } catch (err) {
       explain(err)
     } finally {
@@ -237,10 +214,10 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
           <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent/70 to-transparent" aria-hidden="true" />
           <StickerStrip width="w-16" />
 
-          {auth.isDemo && (
-            <div className="mt-5 flex items-start gap-2.5 rounded-xl border border-st-yellow/25 bg-st-yellow/[0.07] px-3.5 py-2.5 text-[0.82rem] leading-snug text-ink-2">
-              <FlaskConical size={16} className="mt-0.5 shrink-0 text-st-yellow" aria-hidden="true" />
-              {a.demoBanner}
+          {!auth.configured && (
+            <div className="mt-5 flex items-start gap-2.5 rounded-xl border border-[#ff6b7d]/35 bg-[#ff6b7d]/[0.07] px-3.5 py-2.5 text-[0.82rem] leading-snug text-ink-2" role="alert" data-auth-config="missing">
+              <AlertCircle size={16} className="mt-0.5 shrink-0 text-[#ff8a96]" aria-hidden="true" />
+              {a.configMissing}
             </div>
           )}
 
@@ -318,7 +295,7 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
             <div className="mt-7 rounded-2xl border border-st-green/30 bg-st-green/[0.08] p-5" role="status">
               <MailCheck size={26} className="text-[#4fe08f]" aria-hidden="true" />
               <p className="mt-3 text-sm leading-relaxed text-ink-2" data-auth-state="reset-sent">
-                {fmt(auth.isDemo ? a.forgotSentDemo : a.forgotSent, { email: email.trim() })}
+                {fmt(a.forgotSent, { email: email.trim() })}
               </p>
               <Link to={routes.signIn} className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[#8fb8ff] hover:text-ink">
                 <ArrowLeft size={16} aria-hidden="true" /> {a.backToSignIn}
@@ -326,26 +303,7 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
             </div>
           ) : (
             <>
-              {(mode === 'signin' || mode === 'signup') && auth.supportsGoogle && (
-                <>
-                  <button
-                    type="button"
-                    onClick={onGoogle}
-                    disabled={busy !== null}
-                    className="btn mt-7 flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-line-strong/70 bg-white/[0.04] text-[0.95rem] font-semibold text-ink transition-colors hover:bg-white/[0.08] disabled:opacity-60"
-                  >
-                    <GoogleMark />
-                    {busy === 'google' ? a.working : a.google}
-                  </button>
-                  <div className="my-6 flex items-center gap-4 text-xs uppercase tracking-[0.2em] text-ink-3">
-                    <span className="h-px flex-1 bg-line" aria-hidden="true" />
-                    {a.or}
-                    <span className="h-px flex-1 bg-line" aria-hidden="true" />
-                  </div>
-                </>
-              )}
-
-              <form noValidate onSubmit={onSubmit} className={cx('grid gap-4', (isForgot || isReset || !auth.supportsGoogle) && 'mt-7')}>
+              <form noValidate onSubmit={onSubmit} className="mt-7 grid gap-4">
                 {isUp && (
                   <Field id={`${uid}-name`} label={a.name} error={errors.name}>
                     <input
@@ -424,7 +382,7 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
                   </div>
                 )}
 
-                <Button type="submit" size="lg" className="mt-2 w-full" disabled={busy !== null || (isReset && !auth.ready)}>
+                <Button type="submit" size="lg" className="mt-2 w-full" disabled={busy !== null || !auth.configured || (isReset && !auth.ready)}>
                   {busy === 'form' ? a.working : isReset ? a.resetSubmit : isForgot ? a.forgotSubmit : isUp ? a.submitUp : a.submitIn}
                 </Button>
               </form>
