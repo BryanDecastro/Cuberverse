@@ -113,7 +113,7 @@ function roundedSquare(size: number, radius: number): THREE.ShapeGeometry {
   return new THREE.ShapeGeometry(shape, 6)
 }
 
-function useCubeAssets() {
+export function useCubeAssets() {
   return useMemo(() => {
     const body = new RoundedBoxGeometry(0.97, 0.97, 0.97, 3, 0.12)
     const sticker = roundedSquare(0.8, 0.13)
@@ -137,7 +137,7 @@ function useCubeAssets() {
 }
 
 /** Sticker placement per outward face: normal axis/sign and the plane's rotation. */
-const STICKER_FACES: Array<{ face: Face; axis: 0 | 1 | 2; sign: 1 | -1; rot: [number, number, number] }> = [
+export const STICKER_FACES: Array<{ face: Face; axis: 0 | 1 | 2; sign: 1 | -1; rot: [number, number, number] }> = [
   { face: 'R', axis: 0, sign: 1, rot: [0, Math.PI / 2, 0] },
   { face: 'L', axis: 0, sign: -1, rot: [0, -Math.PI / 2, 0] },
   { face: 'U', axis: 1, sign: 1, rot: [-Math.PI / 2, 0, 0] },
@@ -212,8 +212,8 @@ export function gestureMove(point: Vec3, along: 0 | 1 | 2, sign: 1 | -1): Move |
   return (sigma === -layer ? face : `${face}'`) as Move
 }
 
-const HOME_YAW = -0.62
-const HOME_PITCH = 0.52
+export const HOME_YAW = -0.62
+export const HOME_PITCH = 0.52
 
 /** Yaw/pitch that put a face straight toward the camera. */
 const FACE_VIEW: Record<Face, { yaw: number; pitch: number }> = {

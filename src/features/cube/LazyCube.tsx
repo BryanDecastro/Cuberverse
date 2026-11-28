@@ -7,7 +7,7 @@ import type { CubeSceneProps } from './CubeScene'
 // Three.js lives in its own chunk, fetched after first paint.
 const CubeScene = lazy(() => import('./CubeScene'))
 
-function hasWebGL(): boolean {
+export function hasWebGL(): boolean {
   try {
     const c = document.createElement('canvas')
     return !!(c.getContext('webgl2') || c.getContext('webgl'))

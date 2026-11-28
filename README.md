@@ -228,7 +228,8 @@ their account, so they see the same history, chart, achievements and course prog
 
 The Timer's scramble visualizer draws 2x2 and 4x4 too (wide moves like Rw/Uw/Fw included):
 `features/cube/nxn.ts` is an N x N sticker model; `nxn.test.ts` proves it matches the 3x3 model
-exactly on 200 random scrambles. 3x3 keeps the WebGL cube; 2x2 and 4x4 get an SVG 3D view and the net.
+exactly on 200 random scrambles. 2x2 and 4x4 get a real 3D cube too (`features/cube/NxNScene.tsx`,
+same look as the 3x3, drag to look around) plus the net; an SVG drawing is the fallback without WebGL.
 
 ## Structure
 

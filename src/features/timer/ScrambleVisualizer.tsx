@@ -1,7 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { Box, LayoutGrid } from 'lucide-react'
 import { STICKER_HEX, type CubeApi } from '@/features/cube/CubeScene'
-import { LazyCube } from '@/features/cube/LazyCube'
+import { LazyCube, hasWebGL } from '@/features/cube/LazyCube'
+
+// 2x2 / 4x4 in real 3D (three.js chunk, loaded only when those events are picked).
+const NxNScene = lazy(() => import('@/features/cube/NxNScene'))
 import { applyAlgN, faceGridN, solvedN } from '@/features/cube/nxn'
 import { parseAlg, type Face } from '@/features/cube/moves'
 import { useI18n } from '@/i18n/I18nProvider'
@@ -120,6 +123,7 @@ export function ScrambleVisualizer({ scramble, event, paused }: { scramble: stri
   const api = useRef<CubeApi>(null)
   const [ready, setReady] = useState(false)
   const size = SIZE[event]
+  const [canWebGL] = useState(hasWebGL)
   const webgl = event === '333'
 
   // Dev only: lets automated checks compare the 3D cube, the net and the model.
@@ -181,12 +185,20 @@ export function ScrambleVisualizer({ scramble, event, paused }: { scramble: stri
                 className={cx('w-full sm:h-[280px]', view === 'both' ? 'h-[170px]' : 'h-[240px]')}
               />
             ) : scramble ? (
-              <IsoView
-                scramble={scramble}
-                size={size}
-                label={v.cubeLabel}
-                className={cx('mx-auto w-full sm:h-[280px]', view === 'both' ? 'h-[170px]' : 'h-[240px]')}
-              />
+              (() => {
+                const box = cx('mx-auto w-full sm:h-[280px]', view === 'both' ? 'h-[170px]' : 'h-[240px]')
+                const flat = <IsoView scramble={scramble} size={size} label={v.cubeLabel} className={box} />
+                // Real 3D like the 3x3; the drawing is only for devices without WebGL (and while loading).
+                return canWebGL ? (
+                  <Suspense fallback={flat}>
+                    <div role="img" aria-label={v.cubeLabel}>
+                      <NxNScene key={size} size={size} scramble={scramble} active={!paused} className={box} />
+                    </div>
+                  </Suspense>
+                ) : (
+                  flat
+                )
+              })()
             ) : (
               <div className={cx('w-full animate-pulse rounded-lg bg-white/5', view === 'both' ? 'h-[170px]' : 'h-[240px]')} />
             )}
